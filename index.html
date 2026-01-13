@@ -3,32 +3,57 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>デジタル会員証</title>
+    <title>G-CONNECT 会員証</title>
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-    <style>
-        body { font-family: sans-serif; text-align: center; background-color: #f4f4f4; padding: 20px; }
-        .card { background: white; border-radius: 15px; padding: 20px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); max-width: 300px; margin: auto; }
-        .rank { font-weight: bold; color: #06C755; font-size: 1.2em; }
-        .point { font-size: 1.5em; margin: 10px 0; }
-    </style>
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
+<body class="bg-slate-900 text-white font-sans min-h-screen flex items-center justify-center p-4">
 
-    <div class="card">
-        <h2>Member Card</h2>
-        <p id="user-name">取得中...</p>
-        <hr>
-        <p>現在のランク</p>
-        <p id="user-rank" class="rank">-</p>
-        <p>保有ポイント</p>
-        <p id="user-point" class="point">-</p>
-        <small id="user-number">No. -----</small>
+    <div id="card" class="w-full max-w-sm bg-gradient-to-br from-emerald-500 to-teal-700 rounded-3xl shadow-2xl overflow-hidden hidden">
+        <div class="p-6">
+            <div class="flex justify-between items-start mb-8">
+                <div>
+                    <p class="text-xs font-bold text-emerald-100 tracking-widest uppercase">Membership Card</p>
+                    <h1 id="user-name" class="text-2xl font-bold mt-1 tracking-tight">読み込み中...</h1>
+                </div>
+                <div class="bg-white/20 px-3 py-1 rounded-full backdrop-blur-md">
+                    <p id="user-rank" class="text-xs font-bold text-white">---</p>
+                </div>
+            </div>
+
+            <div class="space-y-4 mb-8">
+                <div class="bg-white/10 p-4 rounded-2xl flex justify-between items-center">
+                    <span class="text-sm font-medium text-emerald-50 text-opacity-80">応援ポイント</span>
+                    <span id="support-point" class="text-2xl font-black text-white">0 pt</span>
+                </div>
+                <div class="bg-white/10 p-4 rounded-2xl flex justify-between items-center border-l-4 border-yellow-400">
+                    <span class="text-sm font-medium text-emerald-50 text-opacity-80">イベントポイント</span>
+                    <span id="event-point" class="text-2xl font-black text-white">0 pt</span>
+                </div>
+            </div>
+
+            <div class="flex flex-col items-center py-4 bg-white rounded-2xl">
+                <p class="text-[10px] text-gray-400 font-bold mb-2">SCAN FOR CHECK-IN</p>
+                <img id="user-qr" src="" alt="会員バーコード" class="h-24 w-auto">
+                <p id="user-number" class="text-gray-900 font-mono text-sm mt-2 font-bold">No. 000000</p>
+            </div>
+        </div>
+        <div class="bg-black/20 p-3 text-center">
+            <p class="text-[10px] text-emerald-100/50">G-CONNECT Official App</p>
+        </div>
+    </div>
+
+    <div id="loading" class="text-center">
+        <div class="animate-spin h-10 w-10 border-4 border-emerald-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+        <p class="text-emerald-500 font-bold">認証中...</p>
     </div>
 
     <script>
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbwsZEuEwYfCD8wMhuK5-KUB-cNfsAZW-4eRfv1ZsmsGEveQ5vwePfOfzK1NMXl9LsH_Ew/exec";
+        const REG_FORM_URL = "https://liff.line.me/2007046922-qweO2z33?unique_key=zLOxnp&ts=1768302720";
+
         async function main() {
             try {
-                // LIFFの初期化
                 await liff.init({ liffId: "2007046922-qweO2z33" });
 
                 if (!liff.isLoggedIn()) {
@@ -36,29 +61,31 @@
                     return;
                 }
 
-                // プロフィール取得
                 const profile = await liff.getProfile();
                 
-                // GASのURL（先ほどコピーしたものに書き換えてください）
-                const gasUrl = "https://script.google.com/macros/s/AKfycbwsZEuEwYfCD8wMhuK5-KUB-cNfsAZW-4eRfv1ZsmsGEveQ5vwePfOfzK1NMXl9LsH_Ew/exec";
-
-                // GASにデータをリクエスト
-                const response = await fetch(`${gasUrl}?userId=${profile.userId}`);
+                // GASから情報を取得 (action=getを追加)
+                const response = await fetch(`${GAS_URL}?action=get&userId=${profile.userId}`);
                 const data = await response.json();
 
-                // 画面の書き換え
-                if (data.status === "success") {
+                if (data.status === "success" && data.regStatus === "登録完了") {
+                    // 登録済みの場合はカードを表示
+                    document.getElementById('loading').classList.add('hidden');
+                    document.getElementById('card').classList.remove('hidden');
+                    
                     document.getElementById('user-name').innerText = data.name + " 様";
-                    document.getElementById('user-rank').innerText = data.rank;
-                    document.getElementById('user-point').innerText = data.point + " pt";
+                    document.getElementById('user-rank').innerText = data.rank || "REGULAR";
+                    document.getElementById('support-point').innerText = (data.supportPoint || 0) + " pt";
+                    document.getElementById('event-point').innerText = (data.eventPoint || 0) + " pt";
                     document.getElementById('user-number').innerText = "No. " + data.number;
+                    document.getElementById('user-qr').src = data.qr;
                 } else {
-                    document.getElementById('user-name').innerText = "データが見つかりません";
+                    // 未登録の場合は申し込みフォームへリダイレクト
+                    window.location.href = REG_FORM_URL;
                 }
 
             } catch (error) {
                 console.error(error);
-                document.getElementById('user-name').innerText = "エラーが発生しました";
+                document.getElementById('loading').innerHTML = "<p class='text-red-500'>システムエラーが発生しました</p>";
             }
         }
         main();
