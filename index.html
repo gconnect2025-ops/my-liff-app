@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LIFF Member Card</title>
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+</head>
+<body>
+    <h1>GitHubから表示中！</h1>
+    <p id="user-id">取得中...</p>
+
+    <script>
+        async function main() {
+            await liff.init({ liffId: "あなたのLIFF ID" }); // 後で書き換えます
+            if (liff.isLoggedIn()) {
+                const profile = await liff.getProfile();
+                document.getElementById('user-id').innerText = "こんにちは、" + profile.displayName + "さん";
+            } else {
+                liff.login();
+            }
+        }
+        main();
+    </script>
+</body>
+</html>
