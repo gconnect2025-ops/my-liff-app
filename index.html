@@ -49,12 +49,18 @@
     </div>
 
     <script>
+        // 1. 先ほどデプロイした最新のGAS URL
         const GAS_URL = "https://script.google.com/macros/s/AKfycbwsZEuEwYfCD8wMhuK5-KUB-cNfsAZW-4eRfv1ZsmsGEveQ5vwePfOfzK1NMXl9LsH_Ew/exec";
+        
+        // 2. 新しく作った「会員証専用」のLIFF ID
+        const MY_LIFF_ID = "2007046922-d6brbL9k";
+        
+        // 3. 未登録時に飛ばす「申し込みフォーム」のURL
         const REG_FORM_URL = "https://liff.line.me/2007046922-qweO2z33?unique_key=zLOxnp&ts=1768302720";
 
         async function main() {
             try {
-                await liff.init({ liffId: "2007046922-qweO2z33" });
+                await liff.init({ liffId: MY_LIFF_ID });
 
                 if (!liff.isLoggedIn()) {
                     liff.login();
@@ -62,13 +68,10 @@
                 }
 
                 const profile = await liff.getProfile();
-                
-                // GASから情報を取得 (action=getを追加)
                 const response = await fetch(`${GAS_URL}?action=get&userId=${profile.userId}`);
                 const data = await response.json();
 
                 if (data.status === "success" && data.regStatus === "登録完了") {
-                    // 登録済みの場合はカードを表示
                     document.getElementById('loading').classList.add('hidden');
                     document.getElementById('card').classList.remove('hidden');
                     
@@ -79,7 +82,7 @@
                     document.getElementById('user-number').innerText = "No. " + data.number;
                     document.getElementById('user-qr').src = data.qr;
                 } else {
-                    // 未登録の場合は申し込みフォームへリダイレクト
+                    // 未登録なら申し込みへ
                     window.location.href = REG_FORM_URL;
                 }
 
