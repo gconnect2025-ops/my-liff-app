@@ -1,3 +1,9 @@
+
+
+Write complete fixed index.html
+bash
+
+cat > /mnt/user-data/outputs/index.html << 'HTMLEOF'
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -51,65 +57,59 @@
     <!-- ローディング -->
     <div id="loading" class="mt-20 text-center">
         <div class="animate-spin h-10 w-10 border-4 border-emerald-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-        <p class="text-emerald-500 font-bold">認証中...</p>
+        <p id="loading-text" class="text-emerald-500 font-bold">認証中...</p>
     </div>
 
-    <!-- エラー表示 -->
-    <div id="error-section" class="hidden mt-20 text-center">
-        <p id="error-msg" class="text-red-400 font-bold"></p>
+    <!-- エラー -->
+    <div id="error-section" class="hidden mt-20 text-center px-6">
+        <p class="text-red-400 text-4xl mb-4">⚠️</p>
+        <p id="error-msg" class="text-red-400 font-bold text-sm whitespace-pre-line"></p>
     </div>
 
     <script>
-        // ==============================
-        // ★ 設定値（変更が必要な場合はここだけ修正）
-        // ==============================
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbyLbXaY-Oh29SSehra1e6u5O43GnvHeTqTkf7ilruI7rzFZvnIZjnfwTi6vbF9yhl0p4g/exec";
-        const MY_LIFF_ID = "2007046922-d6brbL9k";
+        const GAS_URL      = "https://script.google.com/macros/s/AKfycbyLbXaY-Oh29SSehra1e6u5O43GnvHeTqTkf7ilruI7rzFZvnIZjnfwTi6vbF9yhl0p4g/exec";
+        const MY_LIFF_ID   = "2007046922-d6brbL9k";
         const REG_FORM_URL = "https://liff.line.me/2007046922-qweO2z33?unique_key=zLOxnp&ts=1768302720";
 
-        // ==============================
-        // メイン処理
-        // ==============================
         async function main() {
             try {
                 // 1. LIFF 初期化
                 await liff.init({ liffId: MY_LIFF_ID });
 
-                // 2. 未ログインなら LINE ログインへ
+                // 2. LINE内ブラウザ以外はエラー表示（無限ループ防止）
+                if (!liff.isInClient()) {
+                    showError("このアプリはLINEアプリ内からのみ利用できます。\nLINEのトーク画面からアクセスしてください。");
+                    return;
+                }
+
+                // 3. 未ログインならLINEログインへ
                 if (!liff.isLoggedIn()) {
                     liff.login();
                     return;
                 }
 
-                // 3. LINE プロファイル取得
+                // 4. プロファイル取得
+                document.getElementById('loading-text').innerText = "データ取得中...";
                 const profile = await liff.getProfile();
 
-                // 4. GAS API からユーザーデータを fetch で取得（リダイレクトしない）
-                const response = await fetch(`${GAS_URL}?action=get&userId=${profile.userId}`);
-                if (!response.ok) {
-                    throw new Error(`HTTP error: ${response.status}`);
-                }
-                const data = await response.json();
+                // 5. GAS APIからデータ取得（fetchで取得、リダイレクトしない）
+                const res = await fetch(`${GAS_URL}?action=get&userId=${profile.userId}`);
+                if (!res.ok) throw new Error(`通信エラー: ${res.status}`);
+                const data = await res.json();
 
-                // 5. 登録済みかチェック
+                // 6. 登録済みなら会員証表示、未登録なら登録フォームへ
                 if (data.status === "success" && data.regStatus === "登録完了") {
                     showCard(data);
                 } else {
-                    // 未登録 → 登録フォームへ
                     window.location.href = REG_FORM_URL;
                 }
 
-            } catch (error) {
-                console.error(error);
-                document.getElementById('loading').classList.add('hidden');
-                document.getElementById('error-section').classList.remove('hidden');
-                document.getElementById('error-msg').innerText = "システムエラーが発生しました: " + error.message;
+            } catch (e) {
+                console.error(e);
+                showError("エラーが発生しました:\n" + e.message);
             }
         }
 
-        // ==============================
-        // 会員証カードを表示
-        // ==============================
         function showCard(data) {
             document.getElementById('loading').classList.add('hidden');
             document.getElementById('card').classList.remove('hidden');
@@ -125,9 +125,6 @@
             renderHistory(data.history);
         }
 
-        // ==============================
-        // ポイント履歴を描画
-        // ==============================
         function renderHistory(history) {
             const list = document.getElementById('history-list');
             if (!history || history.length === 0) {
@@ -149,7 +146,14 @@
             `).join('');
         }
 
+        function showError(msg) {
+            document.getElementById('loading').classList.add('hidden');
+            document.getElementById('error-section').classList.remove('hidden');
+            document.getElementById('error-msg').innerText = msg;
+        }
+
         main();
     </script>
 </body>
 </html>
+HTMLEOF
