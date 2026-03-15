@@ -1,9 +1,3 @@
-
-
-Write complete fixed index.html
-bash
-
-cat > /mnt/user-data/outputs/index.html << 'HTMLEOF'
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -67,7 +61,7 @@ cat > /mnt/user-data/outputs/index.html << 'HTMLEOF'
     </div>
 
     <script>
-        const GAS_URL      = "https://script.google.com/macros/s/AKfycbyjWcQCq5iVibr3uSVRYddrnzMB2G7gxxANLCvbNsa8F_X57sFDaiTaXfQyR4z94LxcYQ/exec";
+        const GAS_URL      = "https://script.google.com/macros/s/AKfycbxx1LC_2rt3fg3QVovosbhUPKsPi1cgAZJai0AsDR-nEBRe8Nr93jrU7ycMIMj7zHpCQw/exec";
         const MY_LIFF_ID   = "2007046922-d6brbL9k";
         const REG_FORM_URL = "https://liff.line.me/2007046922-qweO2z33?unique_key=zLOxnp&ts=1768302720";
 
@@ -76,28 +70,22 @@ cat > /mnt/user-data/outputs/index.html << 'HTMLEOF'
                 // 1. LIFF 初期化
                 await liff.init({ liffId: MY_LIFF_ID });
 
-                // 2. LINE内ブラウザ以外はエラー表示（無限ループ防止）
-                if (!liff.isInClient()) {
-                    showError("このアプリはLINEアプリ内からのみ利用できます。\nLINEのトーク画面からアクセスしてください。");
-                    return;
-                }
-
-                // 3. 未ログインならLINEログインへ
+                // 2. 未ログインならLINEログインへ
                 if (!liff.isLoggedIn()) {
                     liff.login();
                     return;
                 }
 
-                // 4. プロファイル取得
+                // 3. プロファイル取得
                 document.getElementById('loading-text').innerText = "データ取得中...";
                 const profile = await liff.getProfile();
 
-                // 5. GAS APIからデータ取得（fetchで取得、リダイレクトしない）
+                // 4. GAS APIからデータ取得
                 const res = await fetch(`${GAS_URL}?action=get&userId=${profile.userId}`);
                 if (!res.ok) throw new Error(`通信エラー: ${res.status}`);
                 const data = await res.json();
 
-                // 6. 登録済みなら会員証表示、未登録なら登録フォームへ
+                // 5. 登録済みなら会員証表示、未登録なら登録フォームへ
                 if (data.status === "success" && data.regStatus === "登録完了") {
                     showCard(data);
                 } else {
@@ -156,4 +144,3 @@ cat > /mnt/user-data/outputs/index.html << 'HTMLEOF'
     </script>
 </body>
 </html>
-HTMLEOF
