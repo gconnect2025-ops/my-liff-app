@@ -3,134 +3,68 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>G-CONNECT 会員証</title>
-    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-slate-900 text-white font-sans min-h-screen p-4 flex flex-col items-center">
-
-    <div id="card" class="w-full max-w-sm bg-gradient-to-br from-emerald-500 to-teal-700 rounded-3xl shadow-2xl overflow-hidden hidden mb-6">
-        <div class="p-6">
-            <div class="flex justify-between items-start mb-6">
-                <div>
-                    <p id="user-company" class="text-[10px] font-bold text-emerald-100 tracking-widest uppercase mb-1">---</p>
-                    <h1 id="user-name" class="text-2xl font-bold tracking-tight">読み込み中...</h1>
-                </div>
-                <div class="bg-white/20 px-3 py-1 rounded-full backdrop-blur-md">
-                    <p id="user-rank" class="text-xs font-bold text-white">---</p>
-                </div>
-            </div>
-            <div class="space-y-3 mb-6">
-                <div class="bg-white/10 p-4 rounded-2xl flex justify-between items-center">
-                    <span class="text-sm font-medium text-emerald-50">応援ポイント</span>
-                    <span id="support-point" class="text-2xl font-black text-white">0 pt</span>
-                </div>
-            </div>
-            <div class="flex flex-col items-center py-4 bg-white rounded-2xl mb-2">
-                <p class="text-[10px] text-gray-400 font-bold mb-2">SCAN FOR CHECK-IN</p>
-                <img id="user-qr" src="" alt="会員バーコード" class="h-24 w-auto">
-                <p id="user-number" class="text-gray-900 font-mono text-sm mt-2 font-bold">No. 000000</p>
-            </div>
-        </div>
-        <div class="bg-black/20 p-2 text-center text-[10px] text-emerald-100/50">
-            G-CONNECT Official App
-        </div>
-    </div>
-
-    <div id="history-section" class="w-full max-w-sm hidden">
-        <h2 class="text-emerald-500 text-sm font-bold mb-3 flex items-center">
-            <span class="mr-2">🕒</span>直近のポイント履歴（5件）
-        </h2>
-        <div id="history-list" class="space-y-2"></div>
-    </div>
-
-    <div id="loading" class="mt-20 text-center">
-        <div class="animate-spin h-10 w-10 border-4 border-emerald-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-        <p id="loading-text" class="text-emerald-500 font-bold">認証中...</p>
-    </div>
-
-    <div id="error-section" class="hidden mt-20 text-center px-6">
-        <p class="text-red-400 text-4xl mb-4">⚠️</p>
-        <p id="error-msg" class="text-red-400 font-bold text-sm whitespace-pre-line"></p>
-    </div>
-
+    <title>G-CONNECT 会員証 読み込み中...</title>
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <script>
-        var GAS_URL      = "https://script.google.com/macros/s/AKfycbzNmJILEixo3ccAY201vFoNdthO5LY90fK22LyP77PnzhKO3fzWxeNCIxKZWZnzqDMeLA/exec";
-        var MY_LIFF_ID   = "2007046922-d6brbL9k";
-        var REG_FORM_URL = "https://liff.line.me/2007046922-qweO2z33?unique_key=zLOxnp&ts=1768302720";
-
-        async function main() {
+        // ★★★ ここをあなたの「新しいデプロイ」URLに書き換えてください ★★★
+        const GAS_URL = "https://script.google.com/macros/s/ここに取得したスクリプトIDが入ります/exec";
+        
+        // LIFF初期化
+        async function initializeLiff() {
             try {
-                await liff.init({ liffId: MY_LIFF_ID });
-
-                if (!liff.isInClient()) {
-                    showError("このページはLINEアプリ内からのみ利用できます。\nLINEで「会員証」と送信してアクセスしてください。");
-                    return;
-                }
+                await liff.init({
+                    liffId: "2007046922-d6brbL9k" // 設定済みのLIFF ID
+                });
 
                 if (!liff.isLoggedIn()) {
-                    liff.login();
-                    return;
-                }
-
-                document.getElementById('loading-text').innerText = "データ取得中...";
-                var profile = await liff.getProfile();
-
-                var res = await fetch(GAS_URL + "?action=get&userId=" + profile.userId);
-                if (!res.ok) throw new Error("通信エラー: " + res.status);
-                var data = await res.json();
-
-                if (data.status === "success" && data.regStatus === "登録完了") {
-                    showCard(data);
+                    liff.login(); // ログインしていなければログイン
                 } else {
-                    window.location.href = REG_FORM_URL;
+                    const profile = await liff.getProfile();
+                    const userId = profile.userId;
+                    
+                    // GASへリダイレクト（userIdをパラメータとして渡す）
+                    const targetUrl = `${GAS_URL}?action=get&userId=${userId}`;
+                    window.location.href = targetUrl;
                 }
-
-            } catch (e) {
-                console.error(e);
-                showError("エラーが発生しました:\n" + e.message);
+            } catch (error) {
+                console.error("LIFFの初期化に失敗しました", error);
+                document.body.innerHTML = `<p style="color:white; text-align:center; margin-top:50px;">
+                    読み込みエラーが発生しました。一度閉じて再度お試しください。<br>
+                    Error: ${error.message}</p>`;
             }
         }
 
-        function showCard(data) {
-            document.getElementById('loading').classList.add('hidden');
-            document.getElementById('card').classList.remove('hidden');
-            document.getElementById('history-section').classList.remove('hidden');
-            document.getElementById('user-company').innerText  = data.company || "会社名なし";
-            document.getElementById('user-name').innerText     = data.name + " 様";
-            document.getElementById('user-rank').innerText     = data.rank || "REGULAR";
-            document.getElementById('support-point').innerText = (data.supportPoint || 0).toLocaleString() + " pt";
-            document.getElementById('user-number').innerText   = "No. " + data.number;
-            document.getElementById('user-qr').src             = data.qr;
-            renderHistory(data.history);
-        }
-
-        function renderHistory(history) {
-            var list = document.getElementById('history-list');
-            if (!history || history.length === 0) {
-                list.innerHTML = '<p class="text-gray-500 text-xs text-center py-4 bg-slate-800 rounded-xl">履歴はありません</p>';
-                return;
-            }
-            list.innerHTML = history.map(function(h) {
-                return '<div class="bg-slate-800 p-3 rounded-xl flex justify-between items-center border border-slate-700">'
-                    + '<div>'
-                    + '<p class="text-[10px] text-gray-400 font-bold">' + h.date + '</p>'
-                    + '<p class="text-xs text-emerald-100">' + h.staff + ' から受取</p>'
-                    + '</div>'
-                    + '<div class="text-right">'
-                    + '<p class="text-sm font-black ' + (h.earned >= 0 ? 'text-emerald-400' : 'text-rose-400') + '">'
-                    + (h.earned >= 0 ? '+' : '') + Number(h.earned).toLocaleString() + ' pt'
-                    + '</p></div></div>';
-            }).join('');
-        }
-
-        function showError(msg) {
-            document.getElementById('loading').classList.add('hidden');
-            document.getElementById('error-section').classList.remove('hidden');
-            document.getElementById('error-msg').innerText = msg;
-        }
-
-        main();
+        window.onload = initializeLiff;
     </script>
+    <style>
+        body {
+            background-color: #0f172a;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: sans-serif;
+            color: #10b981;
+        }
+        .loader {
+            border: 4px solid #1e293b;
+            border-top: 4px solid #10b981;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div style="text-align: center;">
+        <div class="loader" style="margin: 0 auto 20px;"></div>
+        <p>会員証を表示しています...</p>
+    </div>
 </body>
 </html>
