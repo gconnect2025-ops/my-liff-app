@@ -68,7 +68,10 @@
         async function main() {
             try {
                 // 1. LIFF 初期化
-                await liff.init({ liffId: MY_LIFF_ID });
+                await liff.init({
+                    liffId: MY_LIFF_ID,
+                    withLoginOnExternalBrowser: true
+                });
 
                 // 2. 未ログインならLINEログインへ
                 if (!liff.isLoggedIn()) {
