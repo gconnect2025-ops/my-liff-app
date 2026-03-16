@@ -3,68 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>G-CONNECT 会員証 読み込み中...</title>
+    <title>G-CONNECT 読み込み中...</title>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <script>
-        // ★★★ ここをあなたの「新しいデプロイ」URLに書き換えてください ★★★
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbyO4-JSn4WrcFQzPJjUsLFO5_mt2G4rdb8mykxVIekfEWLs-52afPk0VIrOuAXvby2CKQ/exec";
-        
-        // LIFF初期化
+        // 会員証用と送金用のGASのURLをそれぞれ準備します
+        const GAS_URLS = {
+            "2007046922-d6brbL9k": "https://script.google.com/macros/s/AKfycbyO4-JSn4WrcFQzPJjUsLFO5_mt2G4rdb8mykxVIekfEWLs-52afPk0VIrOuAXvby2CKQ/exec", // 会員証
+            "2007046922-EHW4nk35": "https://script.google.com/macros/s/AKfycbz7qfrPj60Zxuoxa9lAFpC3N6mHXAY1HRBQTVUNCEUcqWvA547sibUfbao2pLXKWgTSGA/exec"  // 送金
+        };
+
         async function initializeLiff() {
             try {
-                await liff.init({
-                    liffId: "2007046922-d6brbL9k" // 設定済みのLIFF ID
-                });
+                // URLから今どちらのリフIDで開かれているかを自動取得します
+                const urlParams = new URLSearchParams(window.location.search);
+                const liffId = urlParams.get('liff.state') ? 
+                               extractLiffId(urlParams.get('liff.state')) : 
+                               guessLiffId(); 
+
+                await liff.init({ liffId: liffId });
 
                 if (!liff.isLoggedIn()) {
-                    liff.login(); // ログインしていなければログイン
+                    liff.login();
                 } else {
                     const profile = await liff.getProfile();
                     const userId = profile.userId;
                     
-                    // GASへリダイレクト（userIdをパラメータとして渡す）
-                    const targetUrl = `${GAS_URL}?action=get&userId=${userId}`;
+                    // IDに対応するGASのURLを決定
+                    const gasUrl = GAS_URLS[liffId] || GAS_URLS["2007046922-d6brbL9k"];
+                    const targetUrl = `${gasUrl}?userId=${userId}`;
                     window.location.href = targetUrl;
                 }
             } catch (error) {
-                console.error("LIFFの初期化に失敗しました", error);
-                document.body.innerHTML = `<p style="color:white; text-align:center; margin-top:50px;">
-                    読み込みエラーが発生しました。一度閉じて再度お試しください。<br>
-                    Error: ${error.message}</p>`;
+                console.error("LIFF初期化失敗", error);
+                document.body.innerHTML = `<p style="color:white; text-align:center; padding:20px;">
+                    読み込みエラーが発生しました。<br>Error: ${error.message}</p>`;
             }
+        }
+
+        // リフIDを特定するための補助関数
+        function guessLiffId() {
+            const currentUrl = window.location.href;
+            if (currentUrl.includes("EHW4nk35")) return "2007046922-EHW4nk35";
+            return "2007046922-d6brbL9k";
+        }
+        function extractLiffId(state) {
+            const match = state.match(/liffId=([^&]+)/);
+            return match ? match[1] : "2007046922-d6brbL9k";
         }
 
         window.onload = initializeLiff;
     </script>
     <style>
-        body {
-            background-color: #0f172a;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            font-family: sans-serif;
-            color: #10b981;
-        }
-        .loader {
-            border: 4px solid #1e293b;
-            border-top: 4px solid #10b981;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
+        body { background-color: #0f172a; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; font-family: sans-serif; color: #10b981; }
+        .loader { border: 4px solid #1e293b; border-top: 4px solid #10b981; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
     <div style="text-align: center;">
         <div class="loader" style="margin: 0 auto 20px;"></div>
-        <p>会員証を表示しています...</p>
+        <p>読み込み中...</p>
     </div>
 </body>
 </html>
