@@ -6,7 +6,6 @@
     <title>G-CONNECT 読み込み中...</title>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <script>
-        // 会員証用と送金用のGASのURLをそれぞれ準備します
         const GAS_URLS = {
             "2007046922-d6brbL9k": "https://script.google.com/macros/s/AKfycbwbdJ_R6hO3nbsm-ENDHTkIr-jYLIRJMLB7Ag_ErM4SWmc_FRgP-Q6Y9LRbfsMj8pm85g/exec", // 会員証
             "2007046922-EHW4nk35": "https://script.google.com/macros/s/AKfycbwuhGBNb5rDXp3cuc1n58fRvp7kyiVQf0nIaN82bPEnt_oSMvQAJrpPwjPj66TGuY_F_g/exec"  // 送金
@@ -14,12 +13,21 @@
 
         async function initializeLiff() {
             try {
-                // URLから今どちらのリフIDで開かれているかを自動取得します
+                // URLのパラメータから 'id' を確実に取得する
                 const urlParams = new URLSearchParams(window.location.search);
-                const liffId = urlParams.get('liff.state') ? 
-                               extractLiffId(urlParams.get('liff.state')) : 
-                               guessLiffId(); 
+                let liffId = urlParams.get('id');
 
+                // 万が一パラメータが取得できなかった場合の保険
+                if (!liffId) {
+                    const state = urlParams.get('liff.state');
+                    if (state && state.includes('EHW4nk35')) {
+                        liffId = "2007046922-EHW4nk35";
+                    } else {
+                        liffId = "2007046922-d6brbL9k"; // デフォルト
+                    }
+                }
+
+                // 取得した正しいIDで初期化
                 await liff.init({ liffId: liffId });
 
                 if (!liff.isLoggedIn()) {
@@ -28,27 +36,16 @@
                     const profile = await liff.getProfile();
                     const userId = profile.userId;
                     
-                    // IDに対応するGASのURLを決定
+                    // IDに対応するGASのURLへリダイレクト
                     const gasUrl = GAS_URLS[liffId] || GAS_URLS["2007046922-d6brbL9k"];
                     const targetUrl = `${gasUrl}?userId=${userId}`;
-                    window.location.href = targetUrl;
+                    window.location.replace(targetUrl); // hrefより戻るボタン対策に有効なreplaceを使用
                 }
             } catch (error) {
                 console.error("LIFF初期化失敗", error);
                 document.body.innerHTML = `<p style="color:white; text-align:center; padding:20px;">
-                    読み込みエラーが発生しました。<br>Error: ${error.message}</p>`;
+                    読み込みエラーが発生しました。<br>LINEの設定をご確認ください。<br><span style="font-size:10px;">Error: ${error.message}</span></p>`;
             }
-        }
-
-        // リフIDを特定するための補助関数
-        function guessLiffId() {
-            const currentUrl = window.location.href;
-            if (currentUrl.includes("EHW4nk35")) return "2007046922-EHW4nk35";
-            return "2007046922-d6brbL9k";
-        }
-        function extractLiffId(state) {
-            const match = state.match(/liffId=([^&]+)/);
-            return match ? match[1] : "2007046922-d6brbL9k";
         }
 
         window.onload = initializeLiff;
