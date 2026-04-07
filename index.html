@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>G-CONNECT ポイント送金</title>
-    <!-- LINE SDK -->
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -22,7 +21,7 @@
 
     <div class="w-full max-w-sm glass rounded-[30px] p-6 mb-8">
         <div class="text-center mb-6">
-            <p class="text-[10px] tracking-widest opacity-50">G-CONNECT SYSTEM</p>
+            <p class="text-[10px] tracking-widest opacity-50 uppercase">G-CONNECT SYSTEM</p>
             <p id="userCompany" class="text-xs font-bold mt-1 text-emerald-400">読み込み中...</p>
             <h1 id="userName" class="text-2xl font-black mt-1">読み込み中... 様</h1>
         </div>
@@ -31,7 +30,7 @@
             <div>
                 <label class="block text-[10px] font-bold opacity-50 mb-1">🔍 メンバー・カテゴリー検索</label>
                 <input type="text" id="searchInput" placeholder="例: 名前 または カテゴリー" 
-                       class="w-full bg-white/10 border border-emerald-500/30 rounded-2xl py-3 px-4 text-sm text-white outline-none">
+                       class="w-full bg-white/10 border border-emerald-500/30 rounded-2xl py-3 px-4 text-sm text-white outline-none placeholder-white/20">
             </div>
 
             <div>
@@ -42,8 +41,8 @@
             </div>
 
             <div>
-                <label class="block text-[10px] font-bold opacity-50 mb-1">お会計金額</label>
-                <input type="number" id="totalSales" placeholder="0" class="w-full bg-white/5 border border-white/20 rounded-2xl py-3 px-4 text-lg font-black outline-none">
+                <label class="block text-[10px] font-bold opacity-50 mb-1">お会計金額 (Total Sales)</label>
+                <input type="number" id="totalSales" placeholder="0" class="w-full bg-white/5 border border-white/20 rounded-2xl py-3 px-4 text-lg font-black outline-none text-white">
             </div>
 
             <div>
@@ -56,32 +55,35 @@
                 <input type="number" id="earnedPoints" value="0" readonly class="w-full bg-white/10 border border-emerald-500/30 rounded-2xl py-3 px-4 text-lg font-black text-emerald-200 outline-none">
             </div>
 
-            <button type="submit" id="submitBtn" disabled class="w-full bg-gray-600 text-gray-400 font-black py-4 rounded-2xl shadow-lg text-sm mt-4">
-                読み込み中...
+            <button type="submit" id="submitBtn" disabled class="w-full bg-gray-600 text-gray-400 font-black py-4 rounded-2xl shadow-lg text-sm mt-4 uppercase tracking-widest transition-all">
+                LOADING...
             </button>
         </form>
     </div>
 
     <script>
-        // 1. 最新のGASデプロイURL
         const GAS_URL = "https://script.google.com/macros/s/AKfycbymcA2iZopXIZZ_2odSt-VEQiT2wrj8f5rOUu2daei80Bmry3PQoD-cXMKKCLzkSUOJVA/exec";
-        const LIFF_ID = "2007046922-EHW4nk35"; // 送金用ID
+        const LIFF_ID = "2007046922-EHW4nk35";
 
+        const rankRates = { "ゲスト": 0.01, "レギュラー": 0.02, "ブロンズ": 0.03, "シルバー": 0.04, "ゴールド": 0.05, "プラチナ": 0.06, "ダイヤモンド": 0.08 };
         let allMembers = [];
         let currentUser = {};
 
-        // LIFF初期化
         async function main() {
-            await liff.init({ liffId: LIFF_ID });
-            if (!liff.isLoggedIn()) {
-                liff.login();
-                return;
+            try {
+                await liff.init({ liffId: LIFF_ID });
+                if (!liff.isLoggedIn()) {
+                    liff.login();
+                    return;
+                }
+                const profile = await liff.getProfile();
+                await loadData(profile.userId);
+            } catch (err) {
+                console.error(err);
+                alert("LIFFの初期化に失敗しました。");
             }
-            const profile = await liff.getProfile();
-            loadData(profile.userId);
         }
 
-        // データの読み込み
         async function loadData(userId) {
             try {
                 const response = await fetch(`${GAS_URL}?userId=${userId}`);
@@ -91,16 +93,17 @@
                 allMembers = data.members;
 
                 document.getElementById('userName').innerText = `${currentUser.realName} 様`;
-                document.getElementById('userCompany').innerText = currentUser.company;
+                document.getElementById('userCompany').innerText = currentUser.company || "G-CONNECT";
                 
                 renderList("");
                 document.getElementById('loading').style.display = 'none';
                 
                 const btn = document.getElementById('submitBtn');
                 btn.disabled = false;
-                btn.className = "w-full bg-emerald-500 text-[#001524] font-black py-4 rounded-2xl shadow-lg text-sm mt-4";
+                btn.className = "w-full bg-emerald-500 text-[#001524] font-black py-4 rounded-2xl shadow-lg text-sm mt-4 active:scale-95 transition-all";
                 btn.innerText = "決済・ポイント処理を実行";
             } catch (e) {
+                console.error(e);
                 alert("データの取得に失敗しました。");
             }
         }
@@ -108,20 +111,80 @@
         function renderList(filter) {
             const select = document.getElementById('customerSelect');
             select.innerHTML = '<option value="">お客様を選択してください</option>';
-            const filtered = allMembers.filter(m => m.名前.includes(filter) || m.カテゴリー.includes(filter));
+            const filtered = allMembers.filter(m => m.名前.includes(filter) || m.カテゴリー.includes(filter) || m.会社名.includes(filter));
             filtered.forEach(m => {
                 let opt = document.createElement('option');
                 opt.value = m.userId;
-                opt.text = `[${m.カテゴリー}] ${m.名前} 様`;
+                opt.text = `[${m.カテゴリー}] ${m.名前} 様 (${m.会社名})`;
                 opt.dataset.rank = m.ランク;
                 opt.dataset.points = m.ポイント残高;
+                opt.dataset.useLimit = m.利用上限;
                 opt.dataset.name = m.名前;
                 select.appendChild(opt);
             });
         }
 
-        // --- ポイント計算・送信ロジックは以前のものをここに結合 ---
-        // (計算ロジックなどは長くなるので省略していますが、ここに入れることで動きます)
+        function calculate() {
+            const sales = Number(document.getElementById('totalSales').value) || 0;
+            const select = document.getElementById('customerSelect');
+            const opt = select.options[select.selectedIndex];
+            if (!opt || !opt.value) return;
+
+            const limit = Number(opt.dataset.useLimit) || 0;
+            const balance = Number(opt.dataset.points) || 0;
+            let used = Number(document.getElementById('usedPoints').value) || 0;
+
+            if (used > balance) used = balance;
+            if (limit > 0 && used > limit) used = limit;
+            document.getElementById('usedPoints').value = used;
+
+            const rate = rankRates[opt.dataset.rank] || 0.01;
+            document.getElementById('earnedPoints').value = Math.floor(Math.max(0, sales - used) * rate);
+        }
+
+        document.getElementById('searchInput').addEventListener('input', (e) => renderList(e.target.value));
+        document.getElementById('totalSales').addEventListener('input', calculate);
+        document.getElementById('usedPoints').addEventListener('input', calculate);
+        document.getElementById('customerSelect').addEventListener('change', calculate);
+
+        document.getElementById('transferForm').onsubmit = async function(e) {
+            e.preventDefault();
+            const btn = document.getElementById('submitBtn');
+            const select = document.getElementById('customerSelect');
+            const opt = select.options[select.selectedIndex];
+            
+            btn.disabled = true;
+            btn.innerText = "処理中...";
+
+            const payload = {
+                customerName: opt.dataset.name,
+                totalSales: document.getElementById('totalSales').value,
+                usedPoints: document.getElementById('usedPoints').value,
+                earnedPoints: document.getElementById('earnedPoints').value,
+                staffId: currentUser.userId,
+                staffName: currentUser.realName
+            };
+
+            try {
+                const response = await fetch(GAS_URL, {
+                    method: "POST",
+                    body: JSON.stringify(payload)
+                });
+                const res = await response.json();
+
+                if (res.status === "Success") {
+                    btn.innerText = "完了しました！";
+                    setTimeout(() => { liff.closeWindow(); }, 1500);
+                } else {
+                    alert("エラー: " + res.message);
+                    btn.disabled = false;
+                    btn.innerText = "決済・ポイント処理を実行";
+                }
+            } catch (err) {
+                alert("送信に失敗しました。");
+                btn.disabled = false;
+            }
+        };
 
         window.onload = main;
     </script>
