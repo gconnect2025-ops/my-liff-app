@@ -30,19 +30,19 @@
             <h1 id="userName" class="text-3xl font-black mt-1"></h1>
         </div>
 
-        <div class="mb-6">
-            <a href="https://liff.line.me/2007046922-EHW4nk35" class="block w-full bg-[#001524] text-white text-center py-4 rounded-full text-sm font-black shadow-lg">
+        <div class="mb-6 text-center">
+            <a href="https://liff.line.me/2007046922-EHW4nk35" class="block w-full bg-[#001524] text-white py-4 rounded-full text-sm font-black shadow-lg">
                 💸 ポイントを送金する
             </a>
         </div>
 
         <div class="flex flex-col gap-3 mb-6">
             <div class="point-box rounded-3xl p-5 text-center">
-                <p class="text-[10px] font-black opacity-60 mb-1 uppercase">応援ポイント</p>
+                <p class="text-[10px] font-black opacity-60 mb-1 uppercase tracking-tighter">応援ポイント</p>
                 <p id="mainPoints" class="text-4xl font-black">0<span class="text-xl ml-1 text-xs">G</span></p>
                 <p id="mainExp" class="text-[10px] mt-2 font-bold opacity-50">有効期限: --/--</p>
             </div>
-            </div>
+        </div>
 
         <div class="flex justify-center mb-8">
             <div class="bg-white p-4 rounded-[30px] shadow-xl">
@@ -57,7 +57,8 @@
     </div>
 
     <script>
-        const GAS_URL_CARD = "https://script.google.com/macros/s/AKfycbxdK3UE1Lgi-BI7Hpb2pf2uV4BblOrGhMuwiSldO6OcPZQHJEXSMp4EM2IXiDY7s6SN/exec";
+        // 1. 最新のGAS URLに必ず書き換えてください
+        const GAS_URL_CARD = "https://script.google.com/macros/s/AKfycbxynJn3a7vOSvAo07Ctuz7SBEmYc3oJulCFslF9TeUiY8OFAB0KxAbkqD4J5ixO_IKw0Q/exec";
         const LIFF_ID_CARD = "2007046922-d6brbL9k";
 
         async function init() {
@@ -69,7 +70,7 @@
                 const response = await fetch(`${GAS_URL_CARD}?userId=${profile.userId}`);
                 const user = await response.json();
 
-                // UIの反映
+                // 基本情報の反映
                 document.getElementById('rankLabel').innerText = `RANK: ${user.rank}`;
                 document.getElementById('userCompany').innerText = user.company;
                 document.getElementById('userName').innerText = `${user.realName} 様`;
@@ -77,35 +78,40 @@
                 document.getElementById('mainExp').innerText = `有効期限: ${user.exp}`;
                 document.getElementById('qrCode').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${user.userId}`;
 
-                // カードデザインの適用
                 const card = document.getElementById('cardContainer');
                 const classes = { "プラチナ": "bg-platinum", "ダイヤモンド": "bg-diamond", "ゴールド": "bg-gold", "シルバー": "bg-silver", "ブロンズ": "bg-bronze", "ゲスト": "bg-white text-black" };
                 card.className = `w-full max-w-sm rounded-[40px] p-6 shadow-2xl relative overflow-hidden ${classes[user.rank] || 'bg-default'}`;
 
-// 履歴の描画
-const histDiv = document.getElementById('historyList');
-histDiv.innerHTML = ""; 
-user.historyList.forEach(h => {
-    const color = h.type === 'plus' ? 'text-blue-800' : 'text-red-800';
-    const actionLabel = h.type === 'plus' ? '付与' : '利用';
-    const pointMark = h.type === 'plus' ? '+' : '-';
-    
-    // 「様」がすでに含まれていればそのまま、なければ付ける
-    const staffWithSama = h.staff.includes("様") ? h.staff : h.staff + " 様";
-    
-    histDiv.innerHTML += `
-        <div class="flex justify-between items-center text-[11px] border-b border-black/5 pb-2 text-black">
-            <span class="opacity-60">${h.date}</span>
-            <span class="font-bold flex-1 ml-4">${staffWithSama}（${actionLabel}）</span>
-            <span class="font-black ${color}">${pointMark}${h.point}G</span>
-        </div>`;
-});
+                // --- 履歴の描画ロジック（ここを修正しました） ---
+                const histDiv = document.getElementById('historyList');
+                histDiv.innerHTML = ""; 
+
+                if (user.historyList && user.historyList.length > 0) {
+                    user.historyList.forEach(h => {
+                        const isPlus = (h.type === 'plus');
+                        const colorClass = isPlus ? 'text-blue-800' : 'text-red-800';
+                        const actionLabel = isPlus ? '付与' : '利用';
+                        const pointMark = isPlus ? '+' : '-';
+                        
+                        // 名前から「様」の重複を防ぎつつ、「様（付与）」の形式にする
+                        const staffName = h.staff.replace(/ 様$/g, "") + " 様";
+                        
+                        histDiv.innerHTML += `
+                            <div class="flex justify-between items-center text-[11px] border-b border-black/5 pb-2 text-black">
+                                <span class="opacity-60">${h.date}</span>
+                                <span class="font-bold flex-1 ml-4">${staffName}（${actionLabel}）</span>
+                                <span class="font-black ${colorClass}">${pointMark}${h.point}G</span>
+                            </div>`;
+                    });
+                } else {
+                    histDiv.innerHTML = '<p class="text-center opacity-40 text-[10px]">履歴はありません</p>';
+                }
 
                 document.getElementById('loading').style.display = 'none';
                 card.style.display = 'block';
             } catch (e) {
                 console.error(e);
-                alert("データの読み込みに失敗しました。");
+                alert("データの取得に失敗しました。");
             }
         }
         window.onload = init;
