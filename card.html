@@ -82,19 +82,18 @@
                 const classes = { "プラチナ": "bg-platinum", "ダイヤモンド": "bg-diamond", "ゴールド": "bg-gold", "シルバー": "bg-silver", "ブロンズ": "bg-bronze", "ゲスト": "bg-white text-black" };
                 card.className = `w-full max-w-sm rounded-[40px] p-6 shadow-2xl relative overflow-hidden ${classes[user.rank] || 'bg-default'}`;
 
-                // 履歴の描画
-                const histDiv = document.getElementById('historyList');
-                histDiv.innerHTML = ""; 
-                // 履歴の描画部分を以下に差し替え
+       // 履歴の描画
+const histDiv = document.getElementById('historyList');
+histDiv.innerHTML = ""; 
 user.historyList.forEach(h => {
     const color = h.type === 'plus' ? 'text-blue-800' : 'text-red-800';
-    const mark = h.type === 'plus' ? '付与' : '利用';
+    const actionLabel = h.type === 'plus' ? '付与' : '利用';
     const pointMark = h.type === 'plus' ? '+' : '-';
     
     histDiv.innerHTML += `
         <div class="flex justify-between items-center text-[11px] border-b border-black/5 pb-2 text-black">
             <span class="opacity-60">${h.date}</span>
-            <span class="font-bold flex-1 ml-4">${h.staff}（${mark}）</span>
+            <span class="font-bold flex-1 ml-4">${h.staff}（${actionLabel}）</span>
             <span class="font-black ${color}">${pointMark}${h.point}G</span>
         </div>`;
 });
