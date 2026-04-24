@@ -18,13 +18,11 @@
     </style>
 </head>
 <body class="min-h-screen flex flex-col items-center p-4">
-    <!-- 読込中画面 -->
     <div id="loading" class="fixed inset-0 bg-[#001524] flex flex-col items-center justify-center z-50">
         <div class="animate-spin h-10 w-10 border-4 border-emerald-500 rounded-full border-t-transparent mb-4"></div>
         <p>会員証を準備中...</p>
     </div>
 
-    <!-- カード本体 -->
     <div id="cardContainer" style="display:none;" class="w-full max-w-sm rounded-[40px] p-6 shadow-2xl relative overflow-hidden">
         <div class="text-center mb-5">
             <p id="rankLabel" class="text-[10px] font-black tracking-widest opacity-60 uppercase"></p>
@@ -44,12 +42,7 @@
                 <p id="mainPoints" class="text-4xl font-black">0<span class="text-xl ml-1 text-xs">G</span></p>
                 <p id="mainExp" class="text-[10px] mt-2 font-bold opacity-50">有効期限: --/--</p>
             </div>
-            <div class="point-box rounded-3xl p-4 text-center opacity-90">
-                <p class="text-[9px] font-black opacity-60 mb-1 uppercase">イベントポイント</p>
-                <p id="eventPoints" class="text-2xl font-black">0<span class="text-sm ml-1 text-xs">G</span></p>
-                <p id="eventExp" class="text-[9px] mt-1 font-bold opacity-50">有効期限: --/--</p>
             </div>
-        </div>
 
         <div class="flex justify-center mb-8">
             <div class="bg-white p-4 rounded-[30px] shadow-xl">
@@ -64,7 +57,6 @@
     </div>
 
     <script>
-        // 1. 最新の会員証用GAS URL
         const GAS_URL_CARD = "https://script.google.com/macros/s/AKfycbxynJn3a7vOSvAo07Ctuz7SBEmYc3oJulCFslF9TeUiY8OFAB0KxAbkqD4J5ixO_IKw0Q/exec";
         const LIFF_ID_CARD = "2007046922-d6brbL9k";
 
@@ -83,8 +75,6 @@
                 document.getElementById('userName').innerText = `${user.realName} 様`;
                 document.getElementById('mainPoints').innerHTML = `${user.points}<span class="text-xl ml-1 text-xs">G</span>`;
                 document.getElementById('mainExp').innerText = `有効期限: ${user.exp}`;
-                document.getElementById('eventPoints').innerHTML = `${user.eventPoints}<span class="text-sm ml-1 text-xs">G</span>`;
-                document.getElementById('eventExp').innerText = `有効期限: ${user.eventExp}`;
                 document.getElementById('qrCode').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${user.userId}`;
 
                 // カードデザインの適用
@@ -98,10 +88,13 @@
                 user.historyList.forEach(h => {
                     const color = h.type === 'plus' ? 'text-blue-800' : 'text-red-800';
                     const mark = h.type === 'plus' ? '+' : '-';
+                    // スタッフ名に「様」がなければ追加
+                    const staffName = h.staff.includes("様") ? h.staff : h.staff + " 様";
+                    
                     histDiv.innerHTML += `
                         <div class="flex justify-between items-center text-[11px] border-b border-black/5 pb-2 text-black">
                             <span class="opacity-60">${h.date}</span>
-                            <span class="font-bold flex-1 ml-4">${h.staff}</span>
+                            <span class="font-bold flex-1 ml-4">${staffName}</span>
                             <span class="font-black ${color}">${mark}${h.point}G</span>
                         </div>`;
                 });
