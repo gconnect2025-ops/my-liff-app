@@ -57,7 +57,7 @@
     </div>
 
     <script>
-        const GAS_URL_CARD = "https://script.google.com/macros/s/AKfycbxynJn3a7vOSvAo07Ctuz7SBEmYc3oJulCFslF9TeUiY8OFAB0KxAbkqD4J5ixO_IKw0Q/exec";
+        const GAS_URL_CARD = "https://script.google.com/macros/s/AKfycbxdK3UE1Lgi-BI7Hpb2pf2uV4BblOrGhMuwiSldO6OcPZQHJEXSMp4EM2IXiDY7s6SN/exec";
         const LIFF_ID_CARD = "2007046922-d6brbL9k";
 
         async function init() {
@@ -82,7 +82,7 @@
                 const classes = { "プラチナ": "bg-platinum", "ダイヤモンド": "bg-diamond", "ゴールド": "bg-gold", "シルバー": "bg-silver", "ブロンズ": "bg-bronze", "ゲスト": "bg-white text-black" };
                 card.className = `w-full max-w-sm rounded-[40px] p-6 shadow-2xl relative overflow-hidden ${classes[user.rank] || 'bg-default'}`;
 
-       // 履歴の描画
+// 履歴の描画
 const histDiv = document.getElementById('historyList');
 histDiv.innerHTML = ""; 
 user.historyList.forEach(h => {
@@ -90,10 +90,13 @@ user.historyList.forEach(h => {
     const actionLabel = h.type === 'plus' ? '付与' : '利用';
     const pointMark = h.type === 'plus' ? '+' : '-';
     
+    // 「様」がすでに含まれていればそのまま、なければ付ける
+    const staffWithSama = h.staff.includes("様") ? h.staff : h.staff + " 様";
+    
     histDiv.innerHTML += `
         <div class="flex justify-between items-center text-[11px] border-b border-black/5 pb-2 text-black">
             <span class="opacity-60">${h.date}</span>
-            <span class="font-bold flex-1 ml-4">${h.staff}（${actionLabel}）</span>
+            <span class="font-bold flex-1 ml-4">${staffWithSama}（${actionLabel}）</span>
             <span class="font-black ${color}">${pointMark}${h.point}G</span>
         </div>`;
 });
