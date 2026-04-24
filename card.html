@@ -39,7 +39,7 @@
         <div class="flex flex-col gap-3 mb-6">
             <div class="point-box rounded-3xl p-5 text-center">
                 <p class="text-[10px] font-black opacity-60 mb-1 uppercase tracking-tighter">応援ポイント</p>
-                <p id="mainPoints" class="text-4xl font-black">0<span class="text-xl ml-1 text-xs">G</span></p>
+                <p id="mainPoints" class="text-4xl font-black">0<span class="text-xl ml-1 text-xs">pt</span></p>
                 <p id="mainExp" class="text-[10px] mt-2 font-bold opacity-50">有効期限: --/--</p>
             </div>
         </div>
@@ -96,7 +96,7 @@
                             <div class="flex justify-between items-center text-[11px] border-b border-black/5 pb-2 text-black">
                                 <span class="opacity-60">${h.date}</span>
                                 <span class="font-bold flex-1 ml-4">${h.staff}（${actionLabel}）</span>
-                                <span class="font-black ${colorClass}">${pointMark}${h.point}G</span>
+                                <span class="font-black ${colorClass}">${pointMark}${h.point}pt</span>
                             </div>`;
                     });
                 } else {
