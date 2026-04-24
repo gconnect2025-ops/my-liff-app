@@ -85,19 +85,19 @@
                 // 履歴の描画
                 const histDiv = document.getElementById('historyList');
                 histDiv.innerHTML = ""; 
-                user.historyList.forEach(h => {
-                    const color = h.type === 'plus' ? 'text-blue-800' : 'text-red-800';
-                    const mark = h.type === 'plus' ? '+' : '-';
-                    // スタッフ名に「様」がなければ追加
-                    const staffName = h.staff.includes("様") ? h.staff : h.staff + " 様";
-                    
-                    histDiv.innerHTML += `
-                        <div class="flex justify-between items-center text-[11px] border-b border-black/5 pb-2 text-black">
-                            <span class="opacity-60">${h.date}</span>
-                            <span class="font-bold flex-1 ml-4">${staffName}</span>
-                            <span class="font-black ${color}">${mark}${h.point}G</span>
-                        </div>`;
-                });
+                // 履歴の描画部分を以下に差し替え
+user.historyList.forEach(h => {
+    const color = h.type === 'plus' ? 'text-blue-800' : 'text-red-800';
+    const mark = h.type === 'plus' ? '付与' : '利用';
+    const pointMark = h.type === 'plus' ? '+' : '-';
+    
+    histDiv.innerHTML += `
+        <div class="flex justify-between items-center text-[11px] border-b border-black/5 pb-2 text-black">
+            <span class="opacity-60">${h.date}</span>
+            <span class="font-bold flex-1 ml-4">${h.staff}（${mark}）</span>
+            <span class="font-black ${color}">${pointMark}${h.point}G</span>
+        </div>`;
+});
 
                 document.getElementById('loading').style.display = 'none';
                 card.style.display = 'block';
