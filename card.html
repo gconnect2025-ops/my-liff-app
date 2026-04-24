@@ -68,7 +68,8 @@
                 const profile = await liff.getProfile();
                 
                 const response = await fetch(`${GAS_URL_CARD}?userId=${profile.userId}`);
-                const user = await response.json();
+const result = await response.json(); // 全データを受け取る
+const user = result.user;           // その中の「user」フォルダを指定する
 
                 // 基本情報の反映
                 document.getElementById('rankLabel').innerText = `RANK: ${user.rank}`;
