@@ -57,65 +57,59 @@
     </div>
 
     <script>
-        // 1. 最新のGAS URLに必ず書き換えてください
-        const GAS_URL_CARD = "https://script.google.com/macros/s/AKfycbx_J0YFNjAX0Dznl9dQ671ITlNkySnsCpcTfJLB3indUoyBSBdBCvqwLBRae7y84299fg/exec";
-        const LIFF_ID_CARD = "2007046922-d6brbL9k";
+    const GAS_URL_CARD = "https://script.google.com/macros/s/AKfycbx_J0YFNjAX0Dznl9dQ671ITlNkySnsCpcTfJLB3indUoyBSBdBCvqwLBRae7y84299fg/exec";
+    const LIFF_ID_CARD = "2007046922-d6brbL9k";
 
-        async function init() {
-            try {
-                await liff.init({ liffId: LIFF_ID_CARD });
-                if (!liff.isLoggedIn()) { liff.login(); return; }
-                const profile = await liff.getProfile();
-                
-                const response = await fetch(`${GAS_URL_CARD}?userId=${profile.userId}`);
-const result = await response.json(); // 全データを受け取る
-const user = result.user;           // その中の「user」フォルダを指定する
+    async function init() {
+        try {
+            await liff.init({ liffId: LIFF_ID_CARD });
+            if (!liff.isLoggedIn()) { liff.login(); return; }
+            const profile = await liff.getProfile();
+            
+            const response = await fetch(`${GAS_URL_CARD}?userId=${profile.userId}`);
+            const result = await response.json(); 
+            const user = result.user; // 階層修正
 
-                // 基本情報の反映
-                document.getElementById('rankLabel').innerText = `RANK: ${user.rank}`;
-                document.getElementById('userCompany').innerText = user.company;
-                document.getElementById('userName').innerText = `${user.realName} 様`;
-                document.getElementById('mainPoints').innerHTML = `${user.points}<span class="text-xl ml-1 text-xs">G</span>`;
-                document.getElementById('mainExp').innerText = `有効期限: ${user.exp}`;
-                document.getElementById('qrCode').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${user.userId}`;
+            document.getElementById('rankLabel').innerText = `RANK: ${user.rank}`;
+            document.getElementById('userCompany').innerText = user.company;
+            document.getElementById('userName').innerText = `${user.realName} 様`;
+            document.getElementById('mainPoints').innerHTML = `${user.points}<span class="text-xl ml-1 text-xs">G</span>`;
+            document.getElementById('mainExp').innerText = `有効期限: ${user.exp}`;
+            document.getElementById('qrCode').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${user.userId}`;
 
-                const card = document.getElementById('cardContainer');
-                const classes = { "プラチナ": "bg-platinum", "ダイヤモンド": "bg-diamond", "ゴールド": "bg-gold", "シルバー": "bg-silver", "ブロンズ": "bg-bronze", "ゲスト": "bg-white text-black" };
-                card.className = `w-full max-w-sm rounded-[40px] p-6 shadow-2xl relative overflow-hidden ${classes[user.rank] || 'bg-default'}`;
+            const card = document.getElementById('cardContainer');
+            const classes = { "プラチナ": "bg-platinum", "ダイヤモンド": "bg-diamond", "ゴールド": "bg-gold", "シルバー": "bg-silver", "ブロンズ": "bg-bronze", "ゲスト": "bg-white text-black" };
+            card.className = `w-full max-w-sm rounded-[40px] p-6 shadow-2xl relative overflow-hidden ${classes[user.rank] || 'bg-default'}`;
 
-                // --- 履歴の描画ロジック（ここを修正しました） ---
-                const histDiv = document.getElementById('historyList');
-                histDiv.innerHTML = ""; 
+            const histDiv = document.getElementById('historyList');
+            histDiv.innerHTML = ""; 
 
-                if (user.historyList && user.historyList.length > 0) {
-                    user.historyList.forEach(h => {
-                        const isPlus = (h.type === 'plus');
-                        const colorClass = isPlus ? 'text-blue-800' : 'text-red-800';
-                        const actionLabel = isPlus ? '付与' : '利用';
-                        const pointMark = isPlus ? '+' : '-';
-                        
-                        // 名前から「様」の重複を防ぎつつ、「様（付与）」の形式にする
-                        const staffName = h.staff.replace(/ 様$/g, "") + " 様";
-                        
-                        histDiv.innerHTML += `
-                            <div class="flex justify-between items-center text-[11px] border-b border-black/5 pb-2 text-black">
-                                <span class="opacity-60">${h.date}</span>
-                                <span class="font-bold flex-1 ml-4">${staffName}（${actionLabel}）</span>
-                                <span class="font-black ${colorClass}">${pointMark}${h.point}G</span>
-                            </div>`;
-                    });
-                } else {
-                    histDiv.innerHTML = '<p class="text-center opacity-40 text-[10px]">履歴はありません</p>';
-                }
-
-                document.getElementById('loading').style.display = 'none';
-                card.style.display = 'block';
-            } catch (e) {
-                console.error(e);
-                alert("データの取得に失敗しました。");
+            if (user.historyList && user.historyList.length > 0) {
+                user.historyList.forEach(h => {
+                    const isPlus = (h.type === 'plus');
+                    const colorClass = isPlus ? 'text-blue-800' : 'text-red-800';
+                    const actionLabel = isPlus ? '付与' : '利用';
+                    const pointMark = isPlus ? '+' : '-';
+                    
+                    histDiv.innerHTML += `
+                        <div class="flex justify-between items-center text-[11px] border-b border-black/5 pb-2 text-black">
+                            <span class="opacity-60">${h.date}</span>
+                            <span class="font-bold flex-1 ml-4">${h.staff}（${actionLabel}）</span>
+                            <span class="font-black ${colorClass}">${pointMark}${h.point}G</span>
+                        </div>`;
+                });
+            } else {
+                histDiv.innerHTML = '<p class="text-center opacity-40 text-[10px]">履歴はありません</p>';
             }
+
+            document.getElementById('loading').style.display = 'none';
+            card.style.display = 'block';
+        } catch (e) {
+            console.error(e);
+            alert("データの取得に失敗しました。");
         }
-        window.onload = init;
-    </script>
+    }
+    window.onload = init;
+</script>
 </body>
 </html>
