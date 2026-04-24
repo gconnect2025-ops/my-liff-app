@@ -74,7 +74,7 @@
                 document.getElementById('rankLabel').innerText = `RANK: ${user.rank}`;
                 document.getElementById('userCompany').innerText = user.company;
                 document.getElementById('userName').innerText = `${user.realName} 様`;
-                document.getElementById('mainPoints').innerHTML = `${user.points}<span class="text-xl ml-1 text-xs">G</span>`;
+                document.getElementById('mainPoints').innerHTML = `${user.points}<span class="text-xl ml-1 text-xs">pt</span>`;
                 document.getElementById('mainExp').innerText = `有効期限: ${user.exp}`;
                 document.getElementById('qrCode').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${user.userId}`;
 
