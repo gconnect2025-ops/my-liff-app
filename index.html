@@ -3,190 +3,184 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>G-CONNECT ポイント送金</title>
-    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>G-CONNECT 会員証</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
     <style>
-        body { font-family: sans-serif; background-color: #001524; color: white; }
-        .glass { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); }
-        select option { color: black !important; }
+        body { background-color: #f4f6f9; font-family: 'Helvetica Neue', Arial, sans-serif; padding-bottom: 30px; }
+        .card-container { max-width: 450px; margin: 20px auto; padding: 0 15px; }
+        .member-card { background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: white; border-radius: 15px; padding: 25px; box-shadow: 0 10px 20px rgba(0,0,0,0.15); position: relative; overflow: hidden; margin-bottom: 25px; }
+        .member-card::before { content: ""; position: absolute; top: -50%; right: -20%; width: 300px; height: 300px; background: rgba(255,255,255,0.03); border-radius: 50%; }
+        .card-brand { font-size: 1.4rem; font-weight: bold; letter-spacing: 1px; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 10px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
+        .card-rank { font-size: 0.8rem; background: rgba(255,255,255,0.2); padding: 3px 10px; border-radius: 20px; font-weight: normal; }
+        .info-label { font-size: 0.75rem; color: rgba(255,255,255,0.7); margin-bottom: 2px; text-transform: uppercase; }
+        .info-value { font-size: 1.1rem; font-weight: 500; margin-bottom: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .point-display { background: rgba(255,255,255,0.1); border-radius: 10px; padding: 15px; margin-top: 15px; text-align: center; backdrop-filter: blur(5px); }
+        .point-display .info-label { color: rgba(255,255,255,0.8); font-size: 0.85rem; }
+        .point-amount { font-size: 2.2rem; font-weight: bold; color: #fff; margin-top: 5px; line-height: 1; }
+        .point-unit { font-size: 1.1rem; margin-left: 5px; font-weight: normal; }
+        .qr-section { background: white; border-radius: 15px; padding: 25px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); text-align: center; margin-bottom: 25px; }
+        .qr-holder { background: #f8f9fa; padding: 15px; border-radius: 10px; display: inline-block; margin-bottom: 15px; border: 1px solid #e9ecef; }
+        .qr-holder img { display: block; max-width: 100%; height: auto; }
+        .history-section { background: white; border-radius: 15px; padding: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+        .history-title { font-size: 1rem; font-weight: bold; color: #333; margin-bottom: 15px; padding-bottom: 8px; border-bottom: 2px solid #f4f6f9; display: flex; align-items: center; }
+        .history-title i { margin-right: 8px; color: #1e3c72; }
+        .history-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #f8f9fa; font-size: 0.9rem; }
+        .history-item:last-child { border-bottom: none; }
+        .hist-info { display: flex; flex-direction: column; max-width: 70%; }
+        .hist-date { font-size: 0.75rem; color: #999; margin-bottom: 2px; }
+        .hist-staff { color: #444; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .hist-amount { font-weight: bold; font-size: 1rem; text-align: right; }
+        .text-plus { color: #2b7de9; }
+        .text-minus { color: #eb4d4b; }
+        .loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; display: flex; justify-content: center; align-items: center; z-index: 9999; transition: opacity 0.3s ease; }
+        .unregistered-message { text-align: center; color: #666; padding: 30px 10px; }
     </style>
 </head>
-<body class="p-4 min-h-screen flex flex-col items-center">
+<body>
 
-    <div id="loading" class="fixed inset-0 bg-[#001524] flex flex-col items-center justify-center z-50">
-        <div class="animate-spin h-10 w-10 border-4 border-emerald-500 rounded-full border-t-transparent mb-4"></div>
-        <p>読み込み中...</p>
+    <div id="loading" class="loading-overlay">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
     </div>
 
-    <div class="w-full max-w-sm glass rounded-[30px] p-6 mb-8">
-        <div class="text-center mb-6">
-            <p class="text-[10px] tracking-widest opacity-50 uppercase">G-CONNECT SYSTEM</p>
-            <p id="userCompany" class="text-xs font-bold mt-1 text-emerald-400">読み込み中...</p>
-            <h1 id="userName" class="text-2xl font-black mt-1">読み込み中... 様</h1>
+    <div class="card-container d-none" id="content">
+        <div class="member-card">
+            <div class="card-brand">
+                <span>G-CONNECT</span>
+                <span class="card-rank" id="userRank">--</span>
+            </div>
+            <div class="row">
+                <div class="col-7">
+                    <div class="info-label">Company</div>
+                    <div class="info-value" id="userCompany">--</div>
+                    <div class="info-label">Name</div>
+                    <div class="info-value" id="userName">--</div>
+                </div>
+                <div class="col-5 border-start border-white border-opacity-10 ps-3">
+                    <div class="info-label">Category</div>
+                    <div class="info-value" id="userCategory" style="font-size: 0.95rem;">--</div>
+                    <div class="info-label">Expiration</div>
+                    <div class="info-value" id="userExp">--</div>
+                </div>
+            </div>
+            <div class="point-display">
+                <div class="info-label"><i class="bi bi-coin me-1"></i>応援ポイント残高</div>
+                <div class="point-amount" id="userPoints">0<span class="point-unit">PT</span></div>
+            </div>
         </div>
 
-        <form id="transferForm" class="space-y-4">
-            <div>
-                <label class="block text-[10px] font-bold opacity-50 mb-1">🔍 メンバー・カテゴリー検索</label>
-                <input type="text" id="searchInput" placeholder="例: 名前 または カテゴリー" 
-                       class="w-full bg-white/10 border border-emerald-500/30 rounded-2xl py-3 px-4 text-sm text-white outline-none placeholder-white/20">
+        <div class="qr-section" id="qrSection">
+            <h5 class="mb-3" style="font-size: 1rem; font-weight: bold; color: #444;">お店での決済時に提示</h5>
+            <div class="qr-holder">
+                <img id="qrCode" src="" alt="QRコード" width="160" height="160">
             </div>
+            <p class="text-muted small mb-0" id="memberNoDisplay">会員番号: --</p>
+        </div>
 
-            <div>
-                <label class="block text-[10px] font-bold opacity-50 mb-1">お客様を選択</label>
-                <select id="customerSelect" required class="w-full bg-white/5 border border-white/20 rounded-2xl py-3 px-4 text-sm text-white outline-none">
-                    <option value="">読込中...</option>
-                </select>
+        <div class="history-section" id="historySection">
+            <div class="history-title">
+                <i class="bi bi-clock-history"></i>ポイントお取引履歴 (直近10件)
             </div>
+            <div id="historyList">
+                </div>
+        </div>
 
-            <div>
-                <label class="block text-[10px] font-bold opacity-50 mb-1">お会計金額 (Total Sales)</label>
-                <input type="number" id="totalSales" placeholder="0" class="w-full bg-white/5 border border-white/20 rounded-2xl py-3 px-4 text-lg font-black outline-none text-white">
-            </div>
-
-            <div>
-                <label class="block text-[10px] font-bold text-red-300 mb-1">ポイント利用</label>
-                <input type="number" id="usedPoints" value="0" class="w-full bg-white/5 border border-red-500/30 rounded-2xl py-3 px-4 text-lg font-black text-red-200 outline-none">
-            </div>
-
-            <div>
-                <label class="block text-[10px] font-bold text-emerald-300 mb-1">付与ポイント (自動計算)</label>
-                <input type="number" id="earnedPoints" value="0" readonly class="w-full bg-white/10 border border-emerald-500/30 rounded-2xl py-3 px-4 text-lg font-black text-emerald-200 outline-none">
-            </div>
-
-            <button type="submit" id="submitBtn" disabled class="w-full bg-gray-600 text-gray-400 font-black py-4 rounded-2xl shadow-lg text-sm mt-4 uppercase tracking-widest transition-all">
-                LOADING...
-            </button>
-        </form>
+        <div class="unregistered-message d-none" id="unregisteredBox">
+            <i class="bi bi-exclamation-circle text-warning display-4 mb-3 d-block"></i>
+            <h5>会員情報が見つかりません</h5>
+            <p class="text-muted small mt-2">LINE公式アカウントで「登録」と送信し、初期登録を完了させてください。</p>
+        </div>
     </div>
 
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <script>
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbymcA2iZopXIZZ_2odSt-VEQiT2wrj8f5rOUu2daei80Bmry3PQoD-cXMKKCLzkSUOJVA/exec";
-        const LIFF_ID = "2007046922-EHW4nk35";
+        // 💡 接続先GASのWebアプリURL（必ずご自身のURLに合わせてください）
+        const GAS_URL_CARD = "https://script.google.com/macros/s/AKfycbw6UqE2xLgP3oN9-p-kH7x8iFALUqK3x0Vj2_z3y5rZ_xV-8uY2v9wF6QfO2T9Q-E7_/exec"; 
 
-        const rankRates = { "ゲスト": 0.01, "レギュラー": 0.02, "ブロンズ": 0.03, "シルバー": 0.04, "ゴールド": 0.05, "プラチナ": 0.06, "ダイヤモンド": 0.08 };
-        let allMembers = [];
-        let currentUser = {};
-
-        async function main() {
+        async function init() {
             try {
-                await liff.init({ liffId: LIFF_ID });
+                await liff.init({ liffId: "2004245645-0XNWgLWe" }); // ご自身のliffId
                 if (!liff.isLoggedIn()) {
                     liff.login();
                     return;
                 }
                 const profile = await liff.getProfile();
-                await loadData(profile.userId);
-            } catch (err) {
-                console.error(err);
-                alert("LIFFの初期化に失敗しました。");
-            }
-        }
+                const userId = profile.userId;
 
-        async function loadData(userId) {
-            try {
-                const response = await fetch(`${GAS_URL}?userId=${userId}`);
-                const data = await response.json();
-                
-                currentUser = data.user;
-                allMembers = data.members;
+                // GASからデータ取得
+                const res = await fetch(`${GAS_URL_CARD}?userId=${encodeURIComponent(userId)}`);
+                const data = await res.json();
+                const user = data.user;
 
-                document.getElementById('userName').innerText = `${currentUser.realName} 様`;
-                document.getElementById('userCompany').innerText = currentUser.company || "G-CONNECT";
+                document.getElementById('loading').classList.add('d-none');
+                document.getElementById('content').classList.remove('d-none');
+
+                if (!user || !user.isRegistered) {
+                    // 未登録の場合の表示制御
+                    document.querySelector('.member-card').classList.add('d-none');
+                    document.getElementById('qrSection').classList.add('d-none');
+                    document.getElementById('historySection').classList.add('d-none');
+                    document.getElementById('unregisteredBox').classList.remove('d-none');
+                    return;
+                }
+
+                // 画面要素への値のセット
+                document.getElementById('userRank').innerText = user.rank || "レギュラー";
+                document.getElementById('userCompany').innerText = user.company || "G-CONNECT";
+                document.getElementById('userName').innerText = user.realName + " 様";
+                document.getElementById('userCategory').innerText = user.category || "未設定";
+                document.getElementById('userExp').innerText = user.exp || "--/--";
+                document.getElementById('userPoints').innerHTML = `${Number(user.points).toLocaleString()}<span class="point-unit">PT</span>`;
                 
-                renderList("");
-                document.getElementById('loading').style.display = 'none';
-                
-                const btn = document.getElementById('submitBtn');
-                btn.disabled = false;
-                btn.className = "w-full bg-emerald-500 text-[#001524] font-black py-4 rounded-2xl shadow-lg text-sm mt-4 active:scale-95 transition-all";
-                btn.innerText = "決済・ポイント処理を実行";
+                // ★D列の会員番号を表示
+                document.getElementById('memberNoDisplay').innerText = `会員番号: ${user.memberNo || "未発行"}`;
+
+                // ★【超重要修正】D列の会員番号（memberNo）を読み込んでQRコード化する
+                if (user.memberNo) {
+                    document.getElementById('qrCode').src = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(user.memberNo)}`;
+                } else {
+                    // 万が一会員番号が空だった場合はLINE IDで代用
+                    document.getElementById('qrCode').src = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(user.userId)}`;
+                }
+
+                // 履歴リストの組み立て
+                const listContainer = document.getElementById('historyList');
+                listContainer.innerHTML = ''; 
+
+                if (user.historyList && user.historyList.length > 0) {
+                    user.historyList.forEach(item => {
+                        const div = document.createElement('div');
+                        div.className = 'history-item';
+                        
+                        const sign = item.type === 'plus' ? '+' : '-';
+                        const colorClass = item.type === 'plus' ? 'text-plus' : 'text-minus';
+                        
+                        div.innerHTML = `
+                            <div class="hist-info">
+                                <span class="hist-date">${item.date}</span>
+                                <span class="hist-staff">${item.staff}</span>
+                            </div>
+                            <div class="hist-amount ${colorClass}">
+                                ${sign}${Number(item.point).toLocaleString()} PT
+                            </div>
+                        `;
+                        listContainer.appendChild(div);
+                    });
+                } else {
+                    listContainer.innerHTML = '<p class="text-muted text-center small py-3 mb-0">お取引履歴はありません</p>';
+                }
+
             } catch (e) {
                 console.error(e);
                 alert("データの取得に失敗しました。");
             }
         }
 
-        function renderList(filter) {
-            const select = document.getElementById('customerSelect');
-            select.innerHTML = '<option value="">お客様を選択してください</option>';
-            const filtered = allMembers.filter(m => m.名前.includes(filter) || m.カテゴリー.includes(filter) || m.会社名.includes(filter));
-            filtered.forEach(m => {
-                let opt = document.createElement('option');
-                opt.value = m.userId;
-                opt.text = `[${m.カテゴリー}] ${m.名前} 様 (${m.会社名})`;
-                opt.dataset.rank = m.ランク;
-                opt.dataset.points = m.ポイント残高;
-                opt.dataset.useLimit = m.利用上限;
-                opt.dataset.name = m.名前;
-                select.appendChild(opt);
-            });
-        }
-
-        function calculate() {
-            const sales = Number(document.getElementById('totalSales').value) || 0;
-            const select = document.getElementById('customerSelect');
-            const opt = select.options[select.selectedIndex];
-            if (!opt || !opt.value) return;
-
-            const limit = Number(opt.dataset.useLimit) || 0;
-            const balance = Number(opt.dataset.points) || 0;
-            let used = Number(document.getElementById('usedPoints').value) || 0;
-
-            if (used > balance) used = balance;
-            if (limit > 0 && used > limit) used = limit;
-            document.getElementById('usedPoints').value = used;
-
-            const rate = rankRates[opt.dataset.rank] || 0.01;
-            document.getElementById('earnedPoints').value = Math.floor(Math.max(0, sales - used) * rate);
-        }
-
-        document.getElementById('searchInput').addEventListener('input', (e) => renderList(e.target.value));
-        document.getElementById('totalSales').addEventListener('input', calculate);
-        document.getElementById('usedPoints').addEventListener('input', calculate);
-        document.getElementById('customerSelect').addEventListener('change', calculate);
-
-        document.getElementById('transferForm').onsubmit = async function(e) {
-            e.preventDefault();
-            const btn = document.getElementById('submitBtn');
-            const select = document.getElementById('customerSelect');
-            const opt = select.options[select.selectedIndex];
-            
-            btn.disabled = true;
-            btn.innerText = "処理中...";
-
-            const payload = {
-                customerName: opt.dataset.name,
-                totalSales: document.getElementById('totalSales').value,
-                usedPoints: document.getElementById('usedPoints').value,
-                earnedPoints: document.getElementById('earnedPoints').value,
-                staffId: currentUser.userId,
-                staffName: currentUser.realName
-            };
-
-            try {
-                const response = await fetch(GAS_URL, {
-                    method: "POST",
-                    body: JSON.stringify(payload)
-                });
-                const res = await response.json();
-
-                if (res.status === "Success") {
-                    btn.innerText = "完了しました！";
-                    setTimeout(() => { liff.closeWindow(); }, 1500);
-                } else {
-                    alert("エラー: " + res.message);
-                    btn.disabled = false;
-                    btn.innerText = "決済・ポイント処理を実行";
-                }
-            } catch (err) {
-                alert("送信に失敗しました。");
-                btn.disabled = false;
-            }
+        window.onload = function() {
+            init();
         };
-
-        window.onload = main;
     </script>
 </body>
 </html>
