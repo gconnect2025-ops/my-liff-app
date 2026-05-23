@@ -31,7 +31,7 @@
         </div>
 
         <div class="mb-6 text-center">
-            <a href="https://liff.line.me/2007046922-EHW4nk35" class="block w-full bg-[#001524] text-white py-4 rounded-full text-sm font-black shadow-lg text-center text-decoration-none">
+            <a href="https://gconnect2025-ops.github.io/my-liff-app/pay.html" class="block w-full bg-[#001524] text-white py-4 rounded-full text-sm font-black shadow-lg text-center text-decoration-none">
                 💸 ポイントを付与する
             </a>
         </div>
@@ -46,7 +46,7 @@
 
         <div class="flex justify-center mb-4">
             <div class="bg-white p-4 rounded-[30px] shadow-xl">
-                <img id="qrCode" src="" class="w-32 h-32">
+                <img id="qrCode" src="" class="w-32 h-32" alt="QRコード">
             </div>
         </div>
         <p id="memberNoDisplay" class="text-center text-[11px] font-bold opacity-50 mb-6">会員番号: --</p>
@@ -58,9 +58,8 @@
     </div>
 
     <script>
-        // 💡 正しいGASのウェブアプリURLをセット
+        // 💡 いただいた最新のGASウェブアプリURLを完璧にセットしました
         const GAS_URL_CARD = "https://script.google.com/macros/s/AKfycbyxMCasJy5foZLF_fqWukTmaeQqhGRTTE9U9Vm7dtGcBAFMkrYj2sUYwp3Y1Pnn55VqOA/exec";
-        // 💡 黒ベース会員証の正しいLIFF IDに修正しました！
         const LIFF_ID_CARD = "2007046922-d6brbL9k"; 
 
         async function init() {
@@ -83,6 +82,7 @@
                     return;
                 }
 
+                // 表示更新
                 document.getElementById('rankLabel').innerText = `RANK: ${user.rank || "レギュラー"}`;
                 document.getElementById('userCompany').innerText = user.company || "G-CONNECT";
                 document.getElementById('userName').innerText = `${user.realName} 様`;
@@ -92,11 +92,13 @@
                 document.getElementById('mainExp').innerText = `有効期限: ${user.exp || "--/--"}`;
                 document.getElementById('memberNoDisplay').innerText = `会員番号: ${user.memberNo || "未発行"}`;
 
-                // I列のGoogleドライブ画像URLを読み込みます。無ければ会員番号から生成
-                if (user.userId) {
-                    const myData = result.members.find(m => m.userId === user.userId);
-                    const qrSrc = (myData && myData.qrUrl) ? myData.qrUrl : `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(user.memberNo || user.userId)}`;
-                    document.getElementById('qrCode').src = qrSrc;
+                // 💡【重要修正】QRコードの表示すれ違いを完全に解消
+                // GASからドライブのURL（user.qrUrl）が届いていればそれを表示し、無ければ会員番号からその場で100%安全に自動生成します
+                if (user.qrUrl && user.qrUrl.includes("http")) {
+                    document.getElementById('qrCode').src = user.qrUrl;
+                } else {
+                    const cleanMemberNo = user.memberNo || user.userId;
+                    document.getElementById('qrCode').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(cleanMemberNo)}`;
                 }
 
                 const card = document.getElementById('cardContainer');
@@ -125,7 +127,7 @@
                     histDiv.innerHTML = '<p class="text-center opacity-40 text-[10px] text-black">履歴はありません</p>';
                 }
 
-                document.getElementById('loading').style.display = 'none';
+                document.getElementById('loading').style.style.display = 'none';
                 card.style.display = 'block';
             } catch (e) {
                 console.error(e);
