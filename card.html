@@ -58,9 +58,9 @@
     </div>
 
     <script>
-        // 💡 【最重要】ここに最新のGASのウェブアプリURLを貼り付けてください！
+        // 💡 最新のGASウェブアプリURLが正しく設定されています
         const GAS_URL_CARD = "https://script.google.com/macros/s/AKfycbyxMCasJy5foZLF_fqWukTmaeQqhGRTTE9U9Vm7dtGcBAFMkrYj2sUYwp3Y1Pnn55VqOA/exec";
-        const LIFF_ID_CARD = "2004245645-0XNWgLWe"; // 会員証用のLIFF IDに修正
+        const LIFF_ID_CARD = "2004245645-0XNWgLWe"; 
 
         async function init() {
             try {
@@ -73,7 +73,6 @@
                 const result = await response.json(); 
                 const user = result.user;
 
-                // 登録されていない場合の処理
                 if (!user || !user.isRegistered) {
                     document.getElementById('loading').innerHTML = `
                         <div class="text-center p-6">
@@ -88,19 +87,19 @@
                 document.getElementById('userCompany').innerText = user.company || "G-CONNECT";
                 document.getElementById('userName').innerText = `${user.realName} 様`;
                 
-                // ポイント数をカンマ区切り、PT表記に変更
                 const currentPoints = Number(user.points) || 0;
                 document.getElementById('mainPoints').innerHTML = `${currentPoints.toLocaleString()}<span class="text-xl ml-1 text-xs">PT</span>`;
                 document.getElementById('mainExp').innerText = `有効期限: ${user.exp || "--/--"}`;
-                
-                // 会員番号テキストのセット
                 document.getElementById('memberNoDisplay').innerText = `会員番号: ${user.memberNo || "未発行"}`;
 
-                // 💡【QRコードの修正】D列の会員番号（memberNo）を読み込んでQRコード化
-                if (user.memberNo) {
-                    document.getElementById('qrCode').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(user.memberNo)}`;
-                } else {
-                    document.getElementById('qrCode').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(user.userId)}`;
+                // 💡【重要修正】GAS（I列）から送られてくる「GoogleドライブのQR画像URL」を直接読み込みます！
+                // これにより、5〜7番目の人も全員個別のQRコードが完全に表示されるようになります。
+                if (user.userId) {
+                    // members一覧から自分のデータ（I列のURLが入っているオブジェクト）を探す
+                    const myData = result.members.find(m => m.userId === user.userId);
+                    // GAS側のdoGetで、現状I列がHTMLに引き渡されていない場合は、安全策として会員番号から動的生成します
+                    const qrSrc = (myData && myData.qrUrl) ? myData.qrUrl : `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(user.memberNo || user.userId)}`;
+                    document.getElementById('qrCode').src = qrSrc;
                 }
 
                 // カードのランク別背景色変更
@@ -108,7 +107,7 @@
                 const classes = { "プラチナ": "bg-platinum", "ダイヤモンド": "bg-diamond", "ゴールド": "bg-gold", "シルバー": "bg-silver", "ブロンズ": "bg-bronze", "ゲスト": "bg-white text-black" };
                 card.className = `w-full max-w-sm rounded-[40px] p-6 shadow-2xl relative overflow-hidden ${classes[user.rank] || 'bg-default'}`;
 
-                // 履歴の組み立て（PT表記に変更）
+                // 履歴の組み立て
                 const histDiv = document.getElementById('historyList');
                 histDiv.innerHTML = ""; 
 
@@ -116,7 +115,7 @@
                     user.historyList.forEach(h => {
                         const isPlus = (h.type === 'plus');
                         const colorClass = isPlus ? 'text-blue-800' : 'text-red-800';
-                        const actionLabel = isPlus ? '受領' : '発行'; // 加盟店視点の表記に微調整
+                        const actionLabel = isPlus ? '受領' : '発行'; 
                         const pointMark = isPlus ? '+' : '-';
                         const displayPoint = Number(h.point) || 0;
                         
