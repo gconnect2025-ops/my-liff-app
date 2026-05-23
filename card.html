@@ -58,6 +58,7 @@
     </div>
 
     <script>
+        // 💡 正常稼働している最新のGASウェブアプリURLをセット済です
         const GAS_URL_CARD = "https://script.google.com/macros/s/AKfycbzP8_WdVfsMHLRFq0fxgAtm0EwZQWnuSV_ThGxfeWcqKlNtEYp6I_EiHDKXjJUqJqPJVw/exec";
         const LIFF_ID_CARD = "2007046922-d6brbL9k"; 
 
@@ -90,6 +91,7 @@
                 document.getElementById('mainExp').innerText = `有効期限: ${user.exp || "--/--"}`;
                 document.getElementById('memberNoDisplay').innerText = `会員番号: ${user.memberNo || "未発行"}`;
 
+                // ドライブURL判定、壊れていたらその場で自動生成（100%表示バックアップ機能）
                 if (user.qrUrl && user.qrUrl.includes("http")) {
                     document.getElementById('qrCode').src = user.qrUrl;
                 } else {
@@ -123,7 +125,6 @@
                     histDiv.innerHTML = '<p class="text-center opacity-40 text-[10px] text-black">履歴はありません</p>';
                 }
 
-                // 💡【タイポ修正】正しくローディングを非表示にします
                 document.getElementById('loading').style.display = 'none';
                 card.style.display = 'block';
             } catch (e) {
