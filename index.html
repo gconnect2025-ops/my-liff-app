@@ -38,31 +38,21 @@
     </style>
 </head>
 <body>
-
     <div id="loading" class="loading-overlay">
-        <div class="spinner-border text-primary" role="status">
-            <span class="visually-hidden">Loading...</span>
-        </div>
+        <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>
     </div>
 
     <div class="card-container d-none" id="content">
         <div class="member-card">
-            <div class="card-brand">
-                <span>G-CONNECT</span>
-                <span class="card-rank" id="userRank">--</span>
-            </div>
+            <div class="card-brand"><span>G-CONNECT</span><span class="card-rank" id="userRank">--</span></div>
             <div class="row">
                 <div class="col-7">
-                    <div class="info-label">Company</div>
-                    <div class="info-value" id="userCompany">--</div>
-                    <div class="info-label">Name</div>
-                    <div class="info-value" id="userName">--</div>
+                    <div class="info-label">Company</div><div class="info-value" id="userCompany">--</div>
+                    <div class="info-label">Name</div><div class="info-value" id="userName">--</div>
                 </div>
                 <div class="col-5 border-start border-white border-opacity-10 ps-3">
-                    <div class="info-label">Category</div>
-                    <div class="info-value" id="userCategory" style="font-size: 0.95rem;">--</div>
-                    <div class="info-label">Expiration</div>
-                    <div class="info-value" id="userExp">--</div>
+                    <div class="info-label">Category</div><div class="info-value" id="userCategory" style="font-size: 0.95rem;">--</div>
+                    <div class="info-label">Expiration</div><div class="info-value" id="userExp">--</div>
                 </div>
             </div>
             <div class="point-display">
@@ -79,18 +69,13 @@
 
         <div class="qr-section" id="qrSection">
             <h5 class="mb-3" style="font-size: 1rem; font-weight: bold; color: #444;">お店での決済時に提示</h5>
-            <div class="qr-holder">
-                <img id="qrCode" src="" alt="QRコード" width="160" height="160">
-            </div>
+            <div class="qr-holder"><img id="qrCode" src="" alt="QRコード" width="160" height="160"></div>
             <p class="text-muted small mb-0" id="memberNoDisplay">会員番号: --</p>
         </div>
 
         <div class="history-section" id="historySection">
-            <div class="history-title">
-                <i class="bi bi-clock-history"></i>ポイントお取引履歴 (直近10件)
-            </div>
-            <div id="historyList">
-                </div>
+            <div class="history-title"><i class="bi bi-clock-history"></i>ポイントお取引履歴 (直近10件)</div>
+            <div id="historyList"></div>
         </div>
 
         <div class="unregistered-message d-none" id="unregisteredBox">
@@ -102,20 +87,16 @@
 
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <script>
-        // 💡 【超重要】ここに最新のGASウェブアプリURL（末尾が /exec のもの）を貼り付けてください！
         const GAS_URL_CARD = "https://script.google.com/macros/s/AKfycbyxMCasJy5foZLF_fqWukTmaeQqhGRTTE9U9Vm7dtGcBAFMkrYj2sUYwp3Y1Pnn55VqOA/exec"; 
 
         async function init() {
             try {
-                await liff.init({ liffId: "2004245645-0XNWgLWe" }); // ご自身のliffId
-                if (!liff.isLoggedIn()) {
-                    liff.login();
-                    return;
-                }
+                // 白ベース会員証の正しいIDを設定
+                await liff.init({ liffId: "2007046922-d6brbL9k" }); 
+                if (!liff.isLoggedIn()) { liff.login(); return; }
                 const profile = await liff.getProfile();
                 const userId = profile.userId;
 
-                // GASからデータ取得
                 const res = await fetch(`${GAS_URL_CARD}?userId=${encodeURIComponent(userId)}`);
                 const data = await res.json();
                 const user = data.user;
@@ -131,28 +112,22 @@
                     return;
                 }
 
-                // 画面要素への値のセット
                 document.getElementById('userRank').innerText = user.rank || "レギュラー";
                 document.getElementById('userCompany').innerText = user.company || "G-CONNECT";
                 document.getElementById('userName').innerText = user.realName + " 様";
                 document.getElementById('userCategory').innerText = user.category || "未設定";
                 document.getElementById('userExp').innerText = user.exp || "--/--";
                 
-                // ポイント残高のセット（PT表記）
                 const currentPoints = Number(user.points) || 0;
                 document.getElementById('userPoints').innerHTML = `${currentPoints.toLocaleString()}<span class="point-unit">PT</span>`;
-                
-                // 会員番号を表示
                 document.getElementById('memberNoDisplay').innerText = `会員番号: ${user.memberNo || "未発行"}`;
 
-                // 会員番号（memberNo）を読み込んでQRコード化
-                if (user.memberNo) {
-                    document.getElementById('qrCode').src = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(user.memberNo)}`;
-                } else {
-                    document.getElementById('qrCode').src = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(user.userId)}`;
+                if (user.userId) {
+                    const myData = data.members.find(m => m.userId === user.userId);
+                    const qrSrc = (myData && myData.qrUrl) ? myData.qrUrl : `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(user.memberNo || user.userId)}`;
+                    document.getElementById('qrCode').src = qrSrc;
                 }
 
-                // 履歴リストの組み立て
                 const listContainer = document.getElementById('historyList');
                 listContainer.innerHTML = ''; 
 
@@ -160,7 +135,6 @@
                     user.historyList.forEach(item => {
                         const div = document.createElement('div');
                         div.className = 'history-item';
-                        
                         const sign = item.type === 'plus' ? '+' : '-';
                         const colorClass = item.type === 'plus' ? 'text-plus' : 'text-minus';
                         const displayPoint = Number(item.point) || 0;
@@ -170,25 +144,18 @@
                                 <span class="hist-date">${item.date}</span>
                                 <span class="hist-staff">${item.staff}</span>
                             </div>
-                            <div class="hist-amount ${colorClass}">
-                                ${sign}${displayPoint.toLocaleString()} PT
-                            </div>
-                        `;
+                            <div class="hist-amount ${colorClass}">${sign}${displayPoint.toLocaleString()} PT</div>`;
                         listContainer.appendChild(div);
                     });
                 } else {
                     listContainer.innerHTML = '<p class="text-muted text-center small py-3 mb-0">お取引履歴はありません</p>';
                 }
-
             } catch (e) {
                 console.error(e);
                 alert("データの取得に失敗しました。");
             }
         }
-
-        window.onload = function() {
-            init();
-        };
+        window.onload = init;
     </script>
 </body>
 </html>
