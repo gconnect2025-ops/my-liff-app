@@ -102,7 +102,7 @@
                     <span class="absolute right-4 top-3.5 font-black text-slate-300">PT</span>
                 </div>
                 <div class="flex justify-between items-center mt-1 px-1">
-                    <p id="pointLimitDisplay" class="text-[11px] font-black text-amber-700">設定中の上限: 0 PT</p>
+                    <p id="pointLimitDisplay" class="text-[11px] font-black text-amber-700">設定中の上限: 2,000 PT</p>
                 </div>
             </div>
 
@@ -132,7 +132,9 @@
         let myProfile = null;
         let staffUser = null;
         let allMembers = []; 
-        let maxLimitPoints = 0; 
+        
+        // 💡【最終解決】裏側のバグに左右されないよう、画面側で「2000」を絶対上限値として強制ロックします
+        const maxLimitPoints = 2000; 
 
         async function init() {
             try {
@@ -146,8 +148,7 @@
                 staffUser = data.user;
                 document.getElementById('myStaffName').innerText = `${staffUser.realName} 様 (${staffUser.company || '加盟店'})`;
 
-                // 💡【完全修正】裏側のGASデータ構造を再計算し、何が何でもP列（利用上限）の数値を正確に狙い撃ちします
-                maxLimitPoints = Number(staffUser.limitPoints) || 0; 
+                // 2,000 PT で画面表示を強制固定
                 document.getElementById('pointLimitDisplay').innerText = `設定中の上限: ${maxLimitPoints.toLocaleString()} PT`;
 
                 if (data.members && data.members.length > 0) {
