@@ -19,11 +19,37 @@
         }
     </style>
 </head>
-<body class="bg-white text-[#001524] min-h-screen p-4 flex flex-col items-center font-sans">
+<body class="bg-white text-[#001524] min-h-screen p-4 flex flex-col items-center font-sans relative">
 
     <div id="loading" class="fixed inset-0 bg-white flex flex-col items-center justify-center z-50">
         <div class="animate-spin h-10 w-10 border-4 border-[#bf953f] rounded-full border-t-transparent mb-4"></div>
         <p class="text-[#001524] font-bold">決済システムを起動中...</p>
+    </div>
+
+    <div id="successModal" style="display:none;" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div class="bg-white w-full max-w-sm rounded-[30px] p-6 text-center shadow-2xl border border-slate-100 animate-fade-in">
+            <div class="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-emerald-200">
+                <span class="text-3xl text-emerald-500">🎉</span>
+            </div>
+            <h3 class="text-lg font-black text-[#001524] mb-4">ポイント取引が正常に完了しました！</h3>
+            
+            <div class="bg-slate-50 rounded-2xl p-4 text-left text-sm space-y-2 mb-6 border border-slate-100">
+                <p class="font-bold text-slate-500">【お取引内容】</p>
+                <p class="text-[#001524] font-bold">お相手：<span id="resCustomer" class="font-black">--</span> 様</p>
+                <div class="flex justify-between border-t border-slate-200/60 pt-2">
+                    <span class="text-amber-800 font-bold">新規付与：</span>
+                    <span id="resEarn" class="font-black text-[#b38728]">+0 PT</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-blue-700 font-bold">今回利用：</span>
+                    <span id="resUse" class="font-black text-blue-600">-0 PT</span>
+                </div>
+            </div>
+
+            <button onclick="closeLiffWindow()" class="w-full bg-gold-gradient text-white py-3.5 rounded-full font-black shadow-md active:scale-[0.98] transition-all tracking-widest text-sm">
+                確認して閉じる
+            </button>
+        </div>
     </div>
 
     <div id="mainContent" style="display:none;" class="w-full max-w-sm bg-white">
@@ -108,7 +134,7 @@
         let myProfile = null;
         let staffUser = null;
         let allMembers = []; 
-        let maxLimitPoints = 0; // スプレッドシートP列の上限値を保持する変数
+        let maxLimitPoints = 0; 
 
         async function init() {
             try {
@@ -120,9 +146,8 @@
                 const data = await response.json();
                 
                 staffUser = data.user;
-                document.getElementById('myStaffName').innerText = `${staffUser.realName} Ext 様 (${staffUser.company || '加盟店'})`;
+                document.getElementById('myStaffName').innerText = `${staffUser.realName} 様 (${staffUser.company || '加盟店'})`;
 
-                // 💡【重要】操作者自身のスプレッドシート「P列（16番目のデータ）」から上限ポイントを取得してセット
                 maxLimitPoints = Number(staffUser.limitPoints) || 0; 
                 document.getElementById('pointLimitDisplay').innerText = `設定中の上限: ${maxLimitPoints.toLocaleString()} PT`;
 
@@ -132,3 +157,126 @@
                 }
 
                 document.getElementById('loading').style.display = 'none';
+                document.getElementById('mainContent').style.display = 'block';
+            } catch(e) {
+                console.error(e);
+                alert("システムの初期化に失敗しました。");
+            }
+        }
+
+        function renderMemberList(list) {
+            const select = document.getElementById('customerSelect');
+            select.innerHTML = '<option value="">-- お相手を選択してください --</option>';
+            
+            list.forEach(m => {
+                const opt = document.createElement('option');
+                opt.value = m.名前;
+                opt.innerText = `${m.名前} 様 [${m.会社名}] (${m.会員番号 || '番号未発行'})`;
+                select.appendChild(opt);
+            });
+
+            document.getElementById('memberCount').innerText = `対象: ${list.length}名`;
+        }
+
+        function filterMembers() {
+            const catKeyword = document.getElementById('searchCategory').value;
+            const nameKeyword = document.getElementById('searchName').value.toLowerCase().trim();
+
+            const filtered = allMembers.filter(m => {
+                let matchCat = true;
+                if (nameKeyword === "") {
+                    if (catKeyword !== "") {
+                        const cleanKeyword = catKeyword.substring(0, 2); 
+                        matchCat = m.カテゴリー.includes(cleanKeyword);
+                    }
+                }
+                                 
+                const matchName = nameKeyword === "" || 
+                                  m.名前.toLowerCase().includes(nameKeyword) || 
+                                  m.会社名.toLowerCase().includes(nameKeyword);
+                return matchCat && matchName;
+            });
+
+            renderMemberList(filtered);
+        }
+
+        function calculatePoints() {
+            const amt = Number(document.getElementById('totalSales').value) || 0;
+            let used = Number(document.getElementById('usedPoints').value) || 0;
+            
+            document.getElementById('pointLimitDisplay').innerText = `設定中の上限: ${maxLimitPoints.toLocaleString()} PT`;
+
+            if (used > maxLimitPoints) {
+                alert(`利用可能上限（${maxLimitPoints} PT）を超えています。自動的に上限値に修正します。`);
+                used = maxLimitPoints;
+                document.getElementById('usedPoints').value = used;
+            }
+
+            let baseAmt = amt - used;
+            if (baseAmt < 0) baseAmt = 0; 
+
+            let earn = Math.floor(baseAmt * 0.03);
+            if (earn > 5000) earn = 5000; 
+            
+            document.getElementById('calcUse').innerText = `${used.toLocaleString()} PT`;
+            document.getElementById('calcEarn').innerText = `${earn.toLocaleString()} PT`;
+        }
+
+        async function submitTx(e) {
+            e.preventDefault();
+            
+            const customerName = document.getElementById('customerSelect').value;
+            const totalSales = Number(document.getElementById('totalSales').value) || 0;
+            const usedPoints = Number(document.getElementById('usedPoints').value) || 0;
+            
+            if (!customerName) { alert("お相手を選択してください。"); return; }
+            if (totalSales < usedPoints) { alert("利用ポイントがご利用金額を超えています。"); return; }
+            if (usedPoints > maxLimitPoints) { alert("利用可能上限を超えています。"); return; }
+            
+            let baseAmt = totalSales - usedPoints;
+            if (baseAmt < 0) baseAmt = 0;
+            let earnedPoints = Math.floor(baseAmt * 0.03);
+            if (earnedPoints > 5000) earnedPoints = 5000;
+            
+            const btn = document.getElementById('submitBtn');
+            btn.disabled = true;
+            btn.innerText = "処理中... 画面を閉じないでください";
+
+            try {
+                const payload = {
+                    totalSales: totalSales,
+                    usedPoints: usedPoints,
+                    earnedPoints: earnedPoints,
+                    staffId: myProfile.userId,
+                    staffName: staffUser.realName,
+                    customerName: customerName
+                };
+
+                await fetch(GAS_URL, {
+                    method: "POST",
+                    body: JSON.stringify(payload)
+                });
+                
+                // 💡【重要修正】グレーの警告を廃止し、自作のきれいなゴールドポップアップにデータを送り込んで表示！
+                document.getElementById('resCustomer').innerText = customerName;
+                document.getElementById('resEarn').innerText = `+${earnedPoints.toLocaleString()} PT`;
+                document.getElementById('resUse').innerText = `-${usedPoints.toLocaleString()} PT`;
+                
+                document.getElementById('successModal').style.display = 'flex';
+            } catch(err) {
+                console.error(err);
+                alert("通信エラーが発生しました。");
+                btn.disabled = false;
+                btn.innerText = "🚀 ポイント取引を確定する";
+            }
+        }
+
+        // 確認ボタンを押したときに、LINE画面を安全に閉じるための関数
+        function closeLiffWindow() {
+            liff.closeWindow();
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>
