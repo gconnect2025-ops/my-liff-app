@@ -146,14 +146,8 @@
                 staffUser = data.user;
                 document.getElementById('myStaffName').innerText = `${staffUser.realName} 様 (${staffUser.company || '加盟店'})`;
 
-                // 💡【位置を完全固定】裏側のデータ構造から、確実にP列（16番目のデータ：利用上限）を特定して狙い撃ちします
-                if (staffUser && staffUser.rawRowData && staffUser.rawRowData.length >= 16) {
-                    // スプレッドシートの16番目の列（P列）の値を直接数値に変換
-                    maxLimitPoints = Number(staffUser.rawRowData[15]) || 0;
-                } else {
-                    maxLimitPoints = Number(staffUser.limitPoints) || 0;
-                }
-                
+                // 💡新しくなったGASから「limitPoints（P列）」をダイレクトに取得して連動
+                maxLimitPoints = Number(staffUser.limitPoints) || 0;
                 document.getElementById('pointLimitDisplay').innerText = `設定中の上限: ${maxLimitPoints.toLocaleString()} PT`;
 
                 if (data.members && data.members.length > 0) {
