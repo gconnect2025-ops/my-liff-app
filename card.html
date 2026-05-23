@@ -39,16 +39,17 @@
         <div class="flex flex-col gap-3 mb-6">
             <div class="point-box rounded-3xl p-5 text-center">
                 <p class="text-[10px] font-black opacity-60 mb-1 uppercase tracking-tighter">応援ポイント</p>
-                <p id="mainPoints" class="text-4xl font-black">0<span class="text-xl ml-1 text-xs">pt</span></p>
+                <p id="mainPoints" class="text-4xl font-black">0<span class="text-xl ml-1 text-xs">PT</span></p>
                 <p id="mainExp" class="text-[10px] mt-2 font-bold opacity-50">有効期限: --/--</p>
             </div>
         </div>
 
-        <div class="flex justify-center mb-8">
+        <div class="flex justify-center mb-4">
             <div class="bg-white p-4 rounded-[30px] shadow-xl">
                 <img id="qrCode" src="" class="w-32 h-32">
             </div>
         </div>
+        <p id="memberNoDisplay" class="text-center text-[11px] font-bold opacity-50 mb-6">会員番号: --</p>
 
         <div class="mt-4 border-t border-black/10 pt-4">
             <h3 class="text-[10px] font-black mb-4 opacity-40 uppercase text-center tracking-widest">History</h3>
@@ -57,31 +58,57 @@
     </div>
 
     <script>
-        const GAS_URL_CARD = "https://script.google.com/macros/s/AKfycbx_J0YFNjAX0Dznl9dQ671ITlNkySnsCpcTfJLB3indUoyBSBdBCvqwLBRae7y84299fg/exec";
-        const LIFF_ID_CARD = "2007046922-d6brbL9k";
+        // 💡 【最重要】ここに最新のGASのウェブアプリURLを貼り付けてください！
+        const GAS_URL_CARD = "https://script.google.com/macros/s/AKfycbyxMCasJy5foZLF_fqWukTmaeQqhGRTTE9U9Vm7dtGcBAFMkrYj2sUYwp3Y1Pnn55VqOA/exec";
+        const LIFF_ID_CARD = "2004245645-0XNWgLWe"; // 会員証用のLIFF IDに修正
 
         async function init() {
             try {
                 await liff.init({ liffId: LIFF_ID_CARD });
                 if (!liff.isLoggedIn()) { liff.login(); return; }
                 const profile = await liff.getProfile();
+                const userId = profile.userId;
                 
-                const response = await fetch(`${GAS_URL_CARD}?userId=${profile.userId}`);
+                const response = await fetch(`${GAS_URL_CARD}?userId=${encodeURIComponent(userId)}`);
                 const result = await response.json(); 
                 const user = result.user;
 
-                // 表示更新
-                document.getElementById('rankLabel').innerText = `RANK: ${user.rank}`;
-                document.getElementById('userCompany').innerText = user.company;
-                document.getElementById('userName').innerText = `${user.realName} 様`;
-                document.getElementById('mainPoints').innerHTML = `${user.points}<span class="text-xl ml-1 text-xs">pt</span>`;
-                document.getElementById('mainExp').innerText = `有効期限: ${user.exp}`;
-                document.getElementById('qrCode').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${user.userId}`;
+                // 登録されていない場合の処理
+                if (!user || !user.isRegistered) {
+                    document.getElementById('loading').innerHTML = `
+                        <div class="text-center p-6">
+                            <p class="text-xl font-bold mb-2">会員情報が見つかりません</p>
+                            <p class="text-sm opacity-60">LINE公式アカウントで「登録」と送信し、初期登録を完了させてください。</p>
+                        </div>`;
+                    return;
+                }
 
+                // 表示更新
+                document.getElementById('rankLabel').innerText = `RANK: ${user.rank || "レギュラー"}`;
+                document.getElementById('userCompany').innerText = user.company || "G-CONNECT";
+                document.getElementById('userName').innerText = `${user.realName} 様`;
+                
+                // ポイント数をカンマ区切り、PT表記に変更
+                const currentPoints = Number(user.points) || 0;
+                document.getElementById('mainPoints').innerHTML = `${currentPoints.toLocaleString()}<span class="text-xl ml-1 text-xs">PT</span>`;
+                document.getElementById('mainExp').innerText = `有効期限: ${user.exp || "--/--"}`;
+                
+                // 会員番号テキストのセット
+                document.getElementById('memberNoDisplay').innerText = `会員番号: ${user.memberNo || "未発行"}`;
+
+                // 💡【QRコードの修正】D列の会員番号（memberNo）を読み込んでQRコード化
+                if (user.memberNo) {
+                    document.getElementById('qrCode').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(user.memberNo)}`;
+                } else {
+                    document.getElementById('qrCode').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(user.userId)}`;
+                }
+
+                // カードのランク別背景色変更
                 const card = document.getElementById('cardContainer');
                 const classes = { "プラチナ": "bg-platinum", "ダイヤモンド": "bg-diamond", "ゴールド": "bg-gold", "シルバー": "bg-silver", "ブロンズ": "bg-bronze", "ゲスト": "bg-white text-black" };
                 card.className = `w-full max-w-sm rounded-[40px] p-6 shadow-2xl relative overflow-hidden ${classes[user.rank] || 'bg-default'}`;
 
+                // 履歴の組み立て（PT表記に変更）
                 const histDiv = document.getElementById('historyList');
                 histDiv.innerHTML = ""; 
 
@@ -89,18 +116,19 @@
                     user.historyList.forEach(h => {
                         const isPlus = (h.type === 'plus');
                         const colorClass = isPlus ? 'text-blue-800' : 'text-red-800';
-                        const actionLabel = isPlus ? '付与' : '利用';
+                        const actionLabel = isPlus ? '受領' : '発行'; // 加盟店視点の表記に微調整
                         const pointMark = isPlus ? '+' : '-';
+                        const displayPoint = Number(h.point) || 0;
                         
                         histDiv.innerHTML += `
                             <div class="flex justify-between items-center text-[11px] border-b border-black/5 pb-2 text-black">
                                 <span class="opacity-60">${h.date}</span>
                                 <span class="font-bold flex-1 ml-4">${h.staff}（${actionLabel}）</span>
-                                <span class="font-black ${colorClass}">${pointMark}${h.point}pt</span>
+                                <span class="font-black ${colorClass}">${pointMark}${displayPoint.toLocaleString()} PT</span>
                             </div>`;
                     });
                 } else {
-                    histDiv.innerHTML = '<p class="text-center opacity-40 text-[10px]">履歴はありません</p>';
+                    histDiv.innerHTML = '<p class="text-center opacity-40 text-[10px] text-black">履歴はありません</p>';
                 }
 
                 document.getElementById('loading').style.display = 'none';
