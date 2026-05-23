@@ -17,9 +17,6 @@
         .bg-gold-gradient {
             background: linear-gradient(135deg, #bf953f 0%, #fcf6ba 50%, #b38728 100%);
         }
-        .border-gold {
-            border-image: linear-gradient(135deg, #bf953f, #fcf6ba, #b38728) 1;
-        }
     </style>
 </head>
 <body class="bg-white text-[#001524] min-h-screen p-4 flex flex-col items-center font-sans">
@@ -75,22 +72,13 @@
             </div>
 
             <div>
-                <label class="block text-xs font-black text-[#b38728] mb-2 uppercase tracking-wider">🔒 お店側が許可する利用上限ポイント</label>
-                <div class="relative">
-                    <input type="number" id="maxLimitInput" min="0" value="2000" oninput="calculatePoints()" class="w-full bg-amber-50/30 border-2 border-amber-200 rounded-xl p-3 text-[#b38728] focus:outline-none focus:border-[#bf953f] text-lg font-black shadow-sm">
-                    <span class="absolute right-4 top-3.5 font-black text-amber-600/50">PT</span>
-                </div>
-                <p class="text-[10px] text-amber-700/70 font-bold mt-1">※この取引でお客様が使える最大値をここで設定（初期値: 2000）</p>
-            </div>
-
-            <div>
                 <label class="block text-xs font-black text-slate-500 mb-2 uppercase tracking-wider">3. 今回使用するポイント</label>
                 <div class="relative">
                     <input type="number" id="usedPoints" min="0" value="0" oninput="calculatePoints()" class="w-full bg-white border-2 border-slate-100 rounded-xl p-3 text-[#001524] focus:outline-none focus:border-[#bf953f] text-lg font-black shadow-sm">
                     <span class="absolute right-4 top-3.5 font-black text-slate-300">PT</span>
                 </div>
                 <div class="flex justify-between items-center mt-1 px-1">
-                    <p id="pointLimitDisplay" class="text-[11px] font-black text-amber-700">設定中の上限: 2,000 PT</p>
+                    <p id="pointLimitDisplay" class="text-[11px] font-black text-amber-700">設定中の上限: 0 PT</p>
                 </div>
             </div>
 
@@ -120,6 +108,7 @@
         let myProfile = null;
         let staffUser = null;
         let allMembers = []; 
+        let maxLimitPoints = 0; // 操作者自身のポイント上限保持用
 
         async function init() {
             try {
@@ -132,6 +121,10 @@
                 
                 staffUser = data.user;
                 document.getElementById('myStaffName').innerText = `${staffUser.realName} 様 (${staffUser.company || '加盟店'})`;
+
+                // 💡操作者自身の持っている現在のポイント残高を上限値として設定
+                maxLimitPoints = Number(staffUser.points) || 0;
+                document.getElementById('pointLimitDisplay').innerText = `設定中の上限: ${maxLimitPoints.toLocaleString()} PT`;
 
                 if (data.members && data.members.length > 0) {
                     allMembers = data.members.filter(m => m.userId !== myProfile.userId && m.名前 !== "ゲスト");
@@ -160,16 +153,18 @@
             document.getElementById('memberCount').innerText = `対象: ${list.length}名`;
         }
 
-        // 🔍 カテゴリーと名前検索（部分一致・記号無視対応）
+        // 🔍 カテゴリーと名前検索（部分一致＆2文字キーワード部分マッチ対応で中村さんを100%出すロジック）
         function filterMembers() {
             const catKeyword = document.getElementById('searchCategory').value;
             const nameKeyword = document.getElementById('searchName').value.toLowerCase().trim();
 
             const filtered = allMembers.filter(m => {
-                const matchCat = catKeyword === "" || 
-                                 m.カテゴリー.includes(catKeyword.replace(/・| /g, "")) || 
-                                 catKeyword.includes(m.カテゴリー.replace(/・| /g, "")) ||
-                                 m.カテゴリー === catKeyword;
+                // スプレッドシート側の「・」や「空白」のゴミ文字による不一致を防ぐため、「建設」「不動産」「飲食」などの核となる2文字で判定
+                let matchCat = true;
+                if (catKeyword !== "") {
+                    const cleanKeyword = catKeyword.substring(0, 2); // 「建設」や「飲食」といった先頭の2文字だけを抽出
+                    matchCat = m.カテゴリー.includes(cleanKeyword);
+                }
                                  
                 const matchName = nameKeyword === "" || 
                                   m.名前.toLowerCase().includes(nameKeyword) || 
@@ -183,14 +178,14 @@
         // 📊 ポイントリアルタイム計算
         function calculatePoints() {
             const amt = Number(document.getElementById('totalSales').value) || 0;
-            let maxLimit = Number(document.getElementById('maxLimitInput').value) || 0;
             let used = Number(document.getElementById('usedPoints').value) || 0;
             
-            document.getElementById('pointLimitDisplay').innerText = `設定中の上限: ${maxLimit.toLocaleString()} PT`;
+            document.getElementById('pointLimitDisplay').innerText = `設定中の上限: ${maxLimitPoints.toLocaleString()} PT`;
 
-            if (used > maxLimit) {
-                alert(`お店側が設定した利用上限（${maxLimit} PT）を超えています。自動的に上限値に修正します。`);
-                used = maxLimit;
+            // 💡入力されたポイントが、操作者様自身の保有上限ポイントを超えていたら自動修正して警告
+            if (used > maxLimitPoints) {
+                alert(`利用可能上限（${maxLimitPoints} PT）を超えています。自動的に上限値に修正します。`);
+                used = maxLimitPoints;
                 document.getElementById('usedPoints').value = used;
             }
 
@@ -211,11 +206,10 @@
             const customerName = document.getElementById('customerSelect').value;
             const totalSales = Number(document.getElementById('totalSales').value) || 0;
             const usedPoints = Number(document.getElementById('usedPoints').value) || 0;
-            const maxLimit = Number(document.getElementById('maxLimitInput').value) || 0;
             
             if (!customerName) { alert("お相手を選択してください。"); return; }
             if (totalSales < usedPoints) { alert("利用ポイントがご利用金額を超えています。"); return; }
-            if (usedPoints > maxLimit) { alert("設定された利用上限を超えています。"); return; }
+            if (usedPoints > maxLimitPoints) { alert("利用可能上限を超えています。"); return; }
             
             let baseAmt = totalSales - usedPoints;
             if (baseAmt < 0) baseAmt = 0;
