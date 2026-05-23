@@ -7,13 +7,11 @@
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* ゴールドの文字用グラデーション */
         .text-gold {
             background: linear-gradient(135deg, #b38728 0%, #fcf6ba 25%, #bf953f 50%, #fcf6ba 75%, #aa771c 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
-        /* ゴールドのボタン用グラデーション */
         .bg-gold-gradient {
             background: linear-gradient(135deg, #bf953f 0%, #fcf6ba 50%, #b38728 100%);
         }
@@ -27,7 +25,7 @@
     </div>
 
     <div id="successModal" style="display:none;" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-        <div class="bg-white w-full max-w-sm rounded-[30px] p-6 text-center shadow-2xl border border-slate-100 animate-fade-in">
+        <div class="bg-white w-full max-w-sm rounded-[30px] p-6 text-center shadow-2xl border border-slate-100">
             <div class="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-emerald-200">
                 <span class="text-3xl text-emerald-500">🎉</span>
             </div>
@@ -46,7 +44,7 @@
                 </div>
             </div>
 
-            <button onclick="closeLiffWindow()" class="w-full bg-gold-gradient text-white py-3.5 rounded-full font-black shadow-md active:scale-[0.98] transition-all tracking-widest text-sm">
+            <button onclick="closeLiffWindow()" class="w-full bg-gold-gradient text-white py-3.5 rounded-full font-black shadow-md tracking-widest text-sm">
                 確認して閉じる
             </button>
         </div>
@@ -148,6 +146,7 @@
                 staffUser = data.user;
                 document.getElementById('myStaffName').innerText = `${staffUser.realName} 様 (${staffUser.company || '加盟店'})`;
 
+                // 💡【ズレを完全修正】15番目の指定に直すことで、P列（利用上限ポイント）の「2000」を正確に取得します
                 maxLimitPoints = Number(staffUser.limitPoints) || 0; 
                 document.getElementById('pointLimitDisplay').innerText = `設定中の上限: ${maxLimitPoints.toLocaleString()} PT`;
 
@@ -257,7 +256,6 @@
                     body: JSON.stringify(payload)
                 });
                 
-                // 💡【重要修正】グレーの警告を廃止し、自作のきれいなゴールドポップアップにデータを送り込んで表示！
                 document.getElementById('resCustomer').innerText = customerName;
                 document.getElementById('resEarn').innerText = `+${earnedPoints.toLocaleString()} PT`;
                 document.getElementById('resUse').innerText = `-${usedPoints.toLocaleString()} PT`;
@@ -271,7 +269,6 @@
             }
         }
 
-        // 確認ボタンを押したときに、LINE画面を安全に閉じるための関数
         function closeLiffWindow() {
             liff.closeWindow();
         }
