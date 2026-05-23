@@ -146,7 +146,10 @@
             const nameKeyword = document.getElementById('searchName').value.toLowerCase().trim();
 
             const filtered = allMembers.filter(m => {
-                const matchCat = catKeyword === "" || m.カテゴリー === catKeyword;
+               const matchCat = catKeyword === "" || 
+                 m.カテゴリー.includes(catKeyword.replace(/・|| /g, "")) || 
+                 catKeyword.includes(m.カテゴリー.replace(/・|| /g, "")) ||
+                 m.カテゴリー === catKeyword;
                 const matchName = nameKeyword === "" || 
                                   m.名前.toLowerCase().includes(nameKeyword) || 
                                   m.会社名.toLowerCase().includes(nameKeyword);
