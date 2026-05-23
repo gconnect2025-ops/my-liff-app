@@ -58,7 +58,6 @@
     </div>
 
     <script>
-        // 💡 いただいた最新のGASウェブアプリURLを完璧にセットしました
         const GAS_URL_CARD = "https://script.google.com/macros/s/AKfycbyxMCasJy5foZLF_fqWukTmaeQqhGRTTE9U9Vm7dtGcBAFMkrYj2sUYwp3Y1Pnn55VqOA/exec";
         const LIFF_ID_CARD = "2007046922-d6brbL9k"; 
 
@@ -82,7 +81,6 @@
                     return;
                 }
 
-                // 表示更新
                 document.getElementById('rankLabel').innerText = `RANK: ${user.rank || "レギュラー"}`;
                 document.getElementById('userCompany').innerText = user.company || "G-CONNECT";
                 document.getElementById('userName').innerText = `${user.realName} 様`;
@@ -92,8 +90,6 @@
                 document.getElementById('mainExp').innerText = `有効期限: ${user.exp || "--/--"}`;
                 document.getElementById('memberNoDisplay').innerText = `会員番号: ${user.memberNo || "未発行"}`;
 
-                // 💡【重要修正】QRコードの表示すれ違いを完全に解消
-                // GASからドライブのURL（user.qrUrl）が届いていればそれを表示し、無ければ会員番号からその場で100%安全に自動生成します
                 if (user.qrUrl && user.qrUrl.includes("http")) {
                     document.getElementById('qrCode').src = user.qrUrl;
                 } else {
@@ -127,7 +123,8 @@
                     histDiv.innerHTML = '<p class="text-center opacity-40 text-[10px] text-black">履歴はありません</p>';
                 }
 
-                document.getElementById('loading').style.style.display = 'none';
+                // 💡【タイポ修正】正しくローディングを非表示にします
+                document.getElementById('loading').style.display = 'none';
                 card.style.display = 'block';
             } catch (e) {
                 console.error(e);
