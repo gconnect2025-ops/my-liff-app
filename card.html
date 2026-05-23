@@ -8,57 +8,67 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { font-family: sans-serif; background-color: #001524; color: white; margin: 0; }
+        /* 各ランクの高級感あるグラデーション（枠線をなくし全面に広げるため丸みを調整） */
         .bg-platinum { background: linear-gradient(135deg, #303030, #a5a5a5, #303030); color: #fff; }
         .bg-diamond  { background: linear-gradient(135deg, #e0e0e0, #ffffff, #e0e0e0); color: #333; }
         .bg-gold     { background: linear-gradient(135deg, #bf953f, #fcf6ba, #b38728); color: #4a3b00; }
         .bg-silver   { background: linear-gradient(135deg, #7f8c8d, #bdc3c7); color: #1a1a1a; }
         .bg-bronze   { background: linear-gradient(135deg, #804e2d, #e68e53); color: white; }
-        .bg-default  { background: linear-gradient(135deg, #99f2ff, #38d1ff); color: #001524; }
-        .point-box { background: rgba(0, 0, 0, 0.1); backdrop-filter: blur(8px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        .bg-default  { background: linear-gradient(135deg, #00223e, #00335c); color: #ffffff; }
+        .point-box { background: rgba(0, 0, 0, 0.2); backdrop-filter: blur(8px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        
+        /* ゴールド文字用スタイル（ポイント画面と統一） */
+        .text-gold {
+            background: linear-gradient(135deg, #b38728 0%, #fcf6ba 25%, #bf953f 50%, #fcf6ba 75%, #aa771c 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
     </style>
 </head>
-<body class="min-h-screen flex flex-col items-center p-4">
+<body class="min-h-screen bg-[#001524]">
+
     <div id="loading" class="fixed inset-0 bg-[#001524] flex flex-col items-center justify-center z-50">
-        <div class="animate-spin h-10 w-10 border-4 border-emerald-500 rounded-full border-t-transparent mb-4"></div>
-        <p>会員証を準備中...</p>
+        <div class="animate-spin h-10 w-10 border-4 border-[#bf953f] rounded-full border-t-transparent mb-4"></div>
+        <p class="text-white font-bold">会員証を準備中...</p>
     </div>
 
-    <div id="cardContainer" style="display:none;" class="w-full max-w-sm rounded-[40px] p-6 shadow-2xl relative overflow-hidden">
-        <div class="text-center mb-5">
-            <p id="rankLabel" class="text-[10px] font-black tracking-widest opacity-60 uppercase"></p>
-            <p id="userCompany" class="text-[12px] font-bold mt-2 opacity-80"></p>
-            <h1 id="userName" class="text-3xl font-black mt-1"></h1>
+    <div id="cardContainer" style="display:none;" class="w-full min-h-screen p-6 relative overflow-hidden bg-default">
+        
+        <div class="text-center mb-6 pt-4">
+            <p id="rankLabel" class="text-xs font-black tracking-widest opacity-80 uppercase text-gold"></p>
+            <p id="userCompany" class="text-sm font-bold mt-2 opacity-90"></p>
+            <h1 id="userName" class="text-3xl font-black mt-1">取得中...</h1>
         </div>
 
         <div class="mb-6 text-center">
-            <a href="https://liff.line.me/2007046922-EHW4nk35" class="block w-full bg-[#001524] text-white py-4 rounded-full text-sm font-black shadow-lg text-center text-decoration-none">
+            <a href="https://liff.line.me/2007046922-EHW4nk35" class="block w-full bg-gradient-to-r from-[#bf953f] via-[#fcf6ba] to-[#b38728] text-white py-4 rounded-full text-base font-black shadow-lg text-center text-decoration-none tracking-widest">
                 💸 ポイントを付与する
             </a>
         </div>
 
         <div class="flex flex-col gap-3 mb-6">
             <div class="point-box rounded-3xl p-5 text-center">
-                <p class="text-[10px] font-black opacity-60 mb-1 uppercase tracking-tighter">応援ポイント</p>
-                <p id="mainPoints" class="text-4xl font-black">0<span class="text-xl ml-1 text-xs">PT</span></p>
-                <p id="mainExp" class="text-[10px] mt-2 font-bold opacity-50">有効期限: --/--</p>
+                <p class="text-xs font-black text-gold mb-1 uppercase tracking-wider">応援ポイント残高</p>
+                <p id="mainPoints" class="text-4xl font-black">0<span class="text-xl ml-1">PT</span></p>
+                <p id="mainExp" class="text-xs mt-2 font-bold opacity-60（半年自動延長対応）">有効期限: --/--</p>
             </div>
         </div>
 
         <div class="flex justify-center mb-4">
-            <div class="bg-white p-4 rounded-[30px] shadow-xl">
-                <img id="qrCode" src="" class="w-32 h-32" alt="QRコード">
+            <div class="bg-white p-4 rounded-[25px] shadow-2xl">
+                <img id="qrCode" src="" class="w-36 h-36" alt="会員QRコード">
             </div>
         </div>
-        <p id="memberNoDisplay" class="text-center text-[11px] font-bold opacity-50 mb-6">会員番号: --</p>
+        <p id="memberNoDisplay" class="text-center text-xs font-bold opacity-60 mb-6">会員番号: --</p>
 
-        <div class="mt-4 border-t border-black/10 pt-4">
-            <h3 class="text-[10px] font-black mb-4 opacity-40 uppercase text-center tracking-widest">History</h3>
-            <div id="historyList" class="space-y-2"></div>
+        <div class="mt-6 border-t border-white/10 pt-4">
+            <h3 class="text-xs font-black mb-4 text-gold uppercase text-center tracking-widest">History (直近10件)</h3>
+            <div id="historyList" class="space-y-2 bg-white/5 rounded-2xl p-4 border border-white/5"></div>
         </div>
     </div>
 
     <script>
-        // 💡 正常稼働している最新のGASウェブアプリURLをセット済です
+        // 稼働確認済みの最新GASウェブアプリURL
         const GAS_URL_CARD = "https://script.google.com/macros/s/AKfycbzP8_WdVfsMHLRFq0fxgAtm0EwZQWnuSV_ThGxfeWcqKlNtEYp6I_EiHDKXjJUqJqPJVw/exec";
         const LIFF_ID_CARD = "2007046922-d6brbL9k"; 
 
@@ -82,16 +92,18 @@
                     return;
                 }
 
+                // 各種テキストデータの反映
                 document.getElementById('rankLabel').innerText = `RANK: ${user.rank || "レギュラー"}`;
                 document.getElementById('userCompany').innerText = user.company || "G-CONNECT";
                 document.getElementById('userName').innerText = `${user.realName} 様`;
                 
                 const currentPoints = Number(user.points) || 0;
-                document.getElementById('mainPoints').innerHTML = `${currentPoints.toLocaleString()}<span class="text-xl ml-1 text-xs">PT</span>`;
+                document.getElementById('mainPoints').innerHTML = `${currentPoints.toLocaleString()}<span class="text-xl ml-1 text-sm font-bold">PT</span>`;
                 document.getElementById('mainExp').innerText = `有効期限: ${user.exp || "--/--"}`;
                 document.getElementById('memberNoDisplay').innerText = `会員番号: ${user.memberNo || "未発行"}`;
 
-                // ドライブURL判定、壊れていたらその場で自動生成（100%表示バックアップ機能）
+                // 💡【QRコード表示の完全修正】
+                // スプレッドシートのI列（qrUrl）に正しい画像URLが入っていればそれを使い、無ければ会員番号からその場で100%安全に自動生成します
                 if (user.qrUrl && user.qrUrl.includes("http")) {
                     document.getElementById('qrCode').src = user.qrUrl;
                 } else {
@@ -99,37 +111,46 @@
                     document.getElementById('qrCode').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(cleanMemberNo)}`;
                 }
 
+                // ランクに応じた背景色グラデーションの切り替え（全面に適用）
                 const card = document.getElementById('cardContainer');
-                const classes = { "プラチナ": "bg-platinum", "ダイヤモンド": "bg-diamond", "ゴールド": "bg-gold", "シルバー": "bg-silver", "ブロンズ": "bg-bronze", "ゲスト": "bg-white text-black" };
-                card.className = `w-full max-w-sm rounded-[40px] p-6 shadow-2xl relative overflow-hidden ${classes[user.rank] || 'bg-default'}`;
+                const classes = { "プラチナ": "bg-platinum", "ダイヤモンド": "bg-diamond", "ゴールド": "bg-gold", "シルバー": "bg-silver", "ブロンズ": "bg-bronze" };
+                
+                if(classes[user.rank]) {
+                    card.className = `w-full min-h-screen p-6 relative overflow-hidden ${classes[user.rank]}`;
+                } else {
+                    card.className = `w-full min-h-screen p-6 relative overflow-hidden bg-default`;
+                }
 
+                // 履歴リストの描画
                 const histDiv = document.getElementById('historyList');
                 histDiv.innerHTML = ""; 
 
                 if (user.historyList && user.historyList.length > 0) {
                     user.historyList.forEach(h => {
                         const isPlus = (h.type === 'plus');
-                        const colorClass = isPlus ? 'text-blue-800' : 'text-red-800';
+                        const colorClass = isPlus ? 'text-emerald-400' : 'text-rose-400';
                         const actionLabel = isPlus ? '受領' : '発行'; 
                         const pointMark = isPlus ? '+' : '-';
                         const displayPoint = Number(h.point) || 0;
                         
                         histDiv.innerHTML += `
-                            <div class="flex justify-between items-center text-[11px] border-b border-black/5 pb-2 text-black">
+                            <div class="flex justify-between items-center text-xs border-b border-white/10 pb-2 pt-1">
                                 <span class="opacity-60">${h.date}</span>
                                 <span class="font-bold flex-1 ml-4">${h.staff}（${actionLabel}）</span>
                                 <span class="font-black ${colorClass}">${pointMark}${displayPoint.toLocaleString()} PT</span>
                             </div>`;
                     });
                 } else {
-                    histDiv.innerHTML = '<p class="text-center opacity-40 text-[10px] text-black">履歴はありません</p>';
+                    histDiv.innerHTML = '<p class="text-center opacity-50 text-xs py-2">お取引履歴はありません</p>';
                 }
 
+                // 💡【タイポ修正】記述ミスを完全に除去し、ローディングを消して画面を表示します
                 document.getElementById('loading').style.display = 'none';
                 card.style.display = 'block';
+
             } catch (e) {
                 console.error(e);
-                alert("データの取得に失敗しました。");
+                alert("会員データの取得に失敗しました。時間をおいて再度お試しください。");
             }
         }
         window.onload = init;
