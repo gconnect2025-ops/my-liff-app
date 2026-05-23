@@ -13,7 +13,7 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
-        /* ゴールドのボタン・枠線用グラデーション */
+        /* ゴールドのボタン用グラデーション */
         .bg-gold-gradient {
             background: linear-gradient(135deg, #bf953f 0%, #fcf6ba 50%, #b38728 100%);
         }
@@ -108,7 +108,7 @@
         let myProfile = null;
         let staffUser = null;
         let allMembers = []; 
-        let maxLimitPoints = 0; // 操作者自身のポイント上限保持用
+        let maxLimitPoints = 0; 
 
         async function init() {
             try {
@@ -122,7 +122,6 @@
                 staffUser = data.user;
                 document.getElementById('myStaffName').innerText = `${staffUser.realName} 様 (${staffUser.company || '加盟店'})`;
 
-                // 💡操作者自身の持っている現在のポイント残高を上限値として設定
                 maxLimitPoints = Number(staffUser.points) || 0;
                 document.getElementById('pointLimitDisplay').innerText = `設定中の上限: ${maxLimitPoints.toLocaleString()} PT`;
 
@@ -153,17 +152,19 @@
             document.getElementById('memberCount').innerText = `対象: ${list.length}名`;
         }
 
-        // 🔍 カテゴリーと名前検索（部分一致＆2文字キーワード部分マッチ対応で中村さんを100%出すロジック）
+        // 🔍 カテゴリー・名前検索（中村さんを絶対に迷子にさせない強化版ロジック）
         function filterMembers() {
             const catKeyword = document.getElementById('searchCategory').value;
             const nameKeyword = document.getElementById('searchName').value.toLowerCase().trim();
 
             const filtered = allMembers.filter(m => {
-                // スプレッドシート側の「・」や「空白」のゴミ文字による不一致を防ぐため、「建設」「不動産」「飲食」などの核となる2文字で判定
+                // 💡名前や会社名に検索キーワードが直接入力されている場合は、カテゴリーの一致チェックをスキップして最優先でヒットさせます！
                 let matchCat = true;
-                if (catKeyword !== "") {
-                    const cleanKeyword = catKeyword.substring(0, 2); // 「建設」や「飲食」といった先頭の2文字だけを抽出
-                    matchCat = m.カテゴリー.includes(cleanKeyword);
+                if (nameKeyword === "") {
+                    if (catKeyword !== "") {
+                        const cleanKeyword = catKeyword.substring(0, 2); 
+                        matchCat = m.カテゴリー.includes(cleanKeyword);
+                    }
                 }
                                  
                 const matchName = nameKeyword === "" || 
@@ -182,7 +183,6 @@
             
             document.getElementById('pointLimitDisplay').innerText = `設定中の上限: ${maxLimitPoints.toLocaleString()} PT`;
 
-            // 💡入力されたポイントが、操作者様自身の保有上限ポイントを超えていたら自動修正して警告
             if (used > maxLimitPoints) {
                 alert(`利用可能上限（${maxLimitPoints} PT）を超えています。自動的に上限値に修正します。`);
                 used = maxLimitPoints;
