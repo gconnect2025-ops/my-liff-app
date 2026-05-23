@@ -55,9 +55,15 @@
             💸 ポイント付与・送金
         </h2>
         
-        <div class="mb-5 bg-slate-50 p-3 rounded-2xl border border-slate-100">
-            <p class="text-[11px] font-bold text-slate-400 uppercase tracking-tight">操作者（あなた）</p>
-            <p id="myStaffName" class="text-base font-black text-[#001524]">取得中...</p>
+        <div class="mb-5 bg-slate-50 p-3 rounded-2xl border border-slate-100 flex justify-between items-center">
+            <div>
+                <p class="text-[11px] font-bold text-slate-400 uppercase tracking-tight">操作者（あなた）</p>
+                <p id="myStaffName" class="text-base font-black text-[#001524]">取得中...</p>
+            </div>
+            <div class="text-right">
+                <p class="text-[10px] font-bold text-slate-400">あなたの原資残高</p>
+                <p id="myStaffPoints" class="text-sm font-black text-amber-700">0 PT</p>
+            </div>
         </div>
 
         <div class="mb-5 bg-slate-50/50 p-4 rounded-2xl border border-slate-100 space-y-3">
@@ -132,7 +138,8 @@
         let myProfile = null;
         let staffUser = null;
         let allMembers = []; 
-        let maxLimitPoints = 0; 
+        let maxLimitPoints = 0; // P列の利用上限ポイント
+        let myWalletPoints = 0; // 💡Q列の紹介人数...ではなく現在の保有ポイント残高（GAS側のuser.points）
 
         async function init() {
             try {
@@ -146,7 +153,11 @@
                 staffUser = data.user;
                 document.getElementById('myStaffName').innerText = `${staffUser.realName} 様 (${staffUser.company || '加盟店'})`;
 
-                // 💡新しくなったGASから「limitPoints（P列）」をダイレクトに取得して連動
+                // 💡お店側（自分）の現在の保有ポイント残高を取得して画面右上に表示
+                myWalletPoints = Number(staffUser.points) || 0;
+                document.getElementById('myStaffPoints').innerText = `${myWalletPoints.toLocaleString()} PT`;
+
+                // P列（利用上限ポイント）の連動データを取得してセット
                 maxLimitPoints = Number(staffUser.limitPoints) || 0;
                 document.getElementById('pointLimitDisplay').innerText = `設定中の上限: ${maxLimitPoints.toLocaleString()} PT`;
 
@@ -214,8 +225,13 @@
             let baseAmt = amt - used;
             if (baseAmt < 0) baseAmt = 0; 
 
+            // 💡【重要計算】通常は残金の3%付与（最大5000）だが、自分自身のポイント原資（myWalletPoints）を超えないように制限！
             let earn = Math.floor(baseAmt * 0.03);
             if (earn > 5000) earn = 5000; 
+            
+            if (earn > myWalletPoints) {
+                earn = myWalletPoints; // お店の残高が上限になるようにストッパーを発動
+            }
             
             document.getElementById('calcUse').innerText = `${used.toLocaleString()} PT`;
             document.getElementById('calcEarn').innerText = `${earn.toLocaleString()} PT`;
@@ -234,8 +250,19 @@
             
             let baseAmt = totalSales - usedPoints;
             if (baseAmt < 0) baseAmt = 0;
+            
             let earnedPoints = Math.floor(baseAmt * 0.03);
             if (earnedPoints > 5000) earnedPoints = 5000;
+            
+            // 💡確定送信時にも、自分（お店）の原資を超えていないか最終ダブルチェック！
+            if (earnedPoints > myWalletPoints) {
+                earnedPoints = myWalletPoints;
+            }
+
+            if (earnedPoints === 0 && baseAmt > 0 && myWalletPoints === 0) {
+                alert("あなた（操作者）の保有ポイントが0PTのため、新しいポイントを発行できません。");
+                return;
+            }
             
             const btn = document.getElementById('submitBtn');
             btn.disabled = true;
