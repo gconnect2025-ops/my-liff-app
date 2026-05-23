@@ -11,12 +11,24 @@
         /* 各ランクの高級感あるグラデーション */
         .bg-platinum { background: linear-gradient(135deg, #303030, #a5a5a5, #303030); color: #fff; }
         .bg-diamond  { background: linear-gradient(135deg, #e0e0e0, #ffffff, #e0e0e0); color: #333; }
-        .bg-gold     { background: linear-gradient(135deg, #bf953f, #fcf6ba, #b38728); color: #4a3b00; }
+        .bg-gold     { background: linear-gradient(135deg, #bf953f, #fcf6ba 25%, #b38728); color: #4a3b00; }
         .bg-silver   { background: linear-gradient(135deg, #7f8c8d, #bdc3c7); color: #1a1a1a; }
         .bg-bronze   { background: linear-gradient(135deg, #804e2d, #e68e53); color: white; }
-        .bg-default  { background: linear-gradient(135deg, #00223e, #00335c); color: #ffffff; }
-        .point-box { background: rgba(0, 0, 0, 0.2); backdrop-filter: blur(8px); border: 1px solid rgba(255, 255, 255, 0.1); }
         
+        /* 💡レギュラー（初期状態）のグラデーション */
+        .bg-regular  { background: linear-gradient(135deg, #00223e, #00335c); color: #ffffff; }
+        
+        /* 💡【新機能】ゲスト（未入会など）の時は「純白ベース」に設定（文字色を自動反転） */
+        .bg-guest    { background: #ffffff !important; color: #001524 !important; }
+        
+        /* 半透明のボックス（背景に応じて馴染むように調整） */
+        .point-box { background: rgba(0, 0, 0, 0.06); border: 1px solid rgba(0, 0, 0, 0.08); }
+        .bg-dark-mode .point-box { background: rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.1); }
+        
+        /* 履歴部分の枠（背景に応じて馴染むように調整） */
+        .history-box { background: rgba(0, 0, 0, 0.03); border: 1px solid rgba(0, 0, 0, 0.05); }
+        .bg-dark-mode .history-box { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.05); }
+
         /* ゴールド文字用スタイル */
         .text-gold {
             background: linear-gradient(135deg, #b38728 0%, #fcf6ba 25%, #bf953f 50%, #fcf6ba 75%, #aa771c 100%);
@@ -32,7 +44,7 @@
         <p class="text-white font-bold">会員証を準備中...</p>
     </div>
 
-    <div id="cardContainer" style="display:none;" class="w-full min-h-screen p-6 relative overflow-hidden bg-default">
+    <div id="cardContainer" style="display:none;" class="w-full min-h-screen p-6 relative overflow-hidden bg-regular">
         
         <div class="text-center mb-6 pt-4">
             <p id="rankLabel" class="text-xs font-black tracking-widest opacity-80 uppercase text-gold"></p>
@@ -47,7 +59,7 @@
         </div>
 
         <div class="flex flex-col gap-3 mb-6">
-            <div class="point-box rounded-3xl p-5 text-center">
+            <div id="pointBox" class="point-box rounded-3xl p-5 text-center">
                 <p class="text-xs font-black text-gold mb-1 uppercase tracking-wider">応援ポイント残高</p>
                 <p id="mainPoints" class="text-4xl font-black">0<span class="text-xl ml-1">PT</span></p>
                 <p id="mainExp" class="text-xs mt-2 font-bold opacity-60">有効期限: --/--</p>
@@ -55,16 +67,16 @@
         </div>
 
         <div class="flex justify-center mb-8">
-            <div class="bg-white p-4 rounded-[25px] shadow-2xl">
+            <div class="bg-white p-4 rounded-[25px] shadow-2xl border border-slate-100">
                 <img id="qrCode" src="" class="w-36 h-36" alt="会員QRコード">
             </div>
         </div>
 
         <div id="memberNoDisplay" style="display:none;"></div>
 
-        <div class="mt-6 border-t border-white/10 pt-4">
+        <div id="historySection" class="mt-6 border-t border-black/10 pt-4">
             <h3 class="text-xs font-black mb-4 text-gold uppercase text-center tracking-widest">History (直近10件)</h3>
-            <div id="historyList" class="space-y-2 bg-white/5 rounded-2xl p-4 border border-white/5"></div>
+            <div id="historyList" class="space-y-2 history-box rounded-2xl p-4"></div>
         </div>
     </div>
 
@@ -92,18 +104,18 @@
                     return;
                 }
 
-                document.getElementById('rankLabel').innerText = `RANK: ${user.rank || "レギュラー"}`;
+                const currentRank = (user.rank || "レギュラー").trim();
+                document.getElementById('rankLabel').innerText = `RANK: ${currentRank}`;
                 document.getElementById('userCompany').innerText = user.company || "G-CONNECT";
                 document.getElementById('userName').innerText = `${user.realName} 様`;
                 
                 const currentPoints = Number(user.points) || 0;
-                document.getElementById('mainPoints').innerHTML = `${currentPoints.toLocaleString()}<span class="text-xl ml-1 text-sm font-bold">PT</span>`;
+                document.getElementById('mainPoints').innerHTML = `${currentPoints.toLocaleString()}<span class="text-sm font-bold ml-1">PT</span>`;
                 document.getElementById('mainExp').innerText = `有効期限: ${user.exp || "--/--"}`;
                 
-                // 💡裏側のデータとしては番号をしっかり保持させておきます（QRコードの生成に必要）
                 document.getElementById('memberNoDisplay').innerText = user.memberNo || "";
 
-                // QRコード生成（裏側のデータを使って100%確実に表示します）
+                // QRコード生成
                 if (user.qrUrl && user.qrUrl.includes("http")) {
                     document.getElementById('qrCode').src = user.qrUrl;
                 } else {
@@ -111,37 +123,59 @@
                     document.getElementById('qrCode').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(cleanMemberNo)}`;
                 }
 
-                // ランクに応じた背景色グラデーションの切り替え
+                // 🎨 ランクに応じた背景色グラデーションの切り替え
                 const card = document.getElementById('cardContainer');
-                const classes = { "プラチナ": "bg-platinum", "ダイヤモンド": "bg-diamond", "ゴールド": "bg-gold", "シルバー": "bg-silver", "ブロンズ": "bg-bronze" };
+                const historySec = document.getElementById('historySection');
                 
-                if(classes[user.rank]) {
-                    card.className = `w-full min-h-screen p-6 relative overflow-hidden ${classes[user.rank]}`;
+                const classes = { 
+                    "ダイヤモンド": "bg-diamond", 
+                    "プラチナ": "bg-platinum", 
+                    "ゴールド": "bg-gold", 
+                    "シルバー": "bg-silver", 
+                    "ブロンズ": "bg-bronze",
+                    "レギュラー": "bg-regular",
+                    "ゲスト": "bg-guest" // 💡ゲストは白
+                };
+                
+                // 選択されたランクに応じて、全体の文字色の濃さや線の色を微調整する処理
+                if(currentRank === "ゲスト") {
+                    card.className = "w-full min-h-screen p-6 relative overflow-hidden bg-guest";
+                    historySec.className = "mt-6 border-t border-black/10 pt-4";
+                    card.classList.remove("bg-dark-mode");
+                } else if(classes[currentRank]) {
+                    card.className = `w-full min-h-screen p-6 relative overflow-hidden bg-dark-mode ${classes[currentRank]}`;
+                    historySec.className = "mt-6 border-t border-white/10 pt-4";
                 } else {
-                    card.className = `w-full min-h-screen p-6 relative overflow-hidden bg-default`;
+                    // もし想定外の文字が入っていた場合の初期状態（レギュラーの紺色）
+                    card.className = "w-full min-h-screen p-6 relative overflow-hidden bg-dark-mode bg-regular";
+                    historySec.className = "mt-6 border-t border-white/10 pt-4";
                 }
 
                 // 履歴リストの描画
                 const histDiv = document.getElementById('historyList');
                 histDiv.innerHTML = ""; 
 
+                // ゲスト時と会員時で履歴の文字の線の色を馴染ませる
+                const borderClass = (currentRank === "ゲスト") ? "border-black/5" : "border-white/10";
+                const textOpacity = (currentRank === "ゲスト") ? "text-slate-500" : "opacity-60";
+
                 if (user.historyList && user.historyList.length > 0) {
                     user.historyList.forEach(h => {
                         const isPlus = (h.type === 'plus');
-                        const colorClass = isPlus ? 'text-emerald-400' : 'text-rose-400';
+                        const colorClass = isPlus ? 'text-emerald-500 font-bold' : 'text-rose-500 font-bold';
                         const actionLabel = isPlus ? '受領' : '発行'; 
                         const pointMark = isPlus ? '+' : '-';
                         const displayPoint = Number(h.point) || 0;
                         
                         histDiv.innerHTML += `
-                            <div class="flex justify-between items-center text-xs border-b border-white/10 pb-2 pt-1">
-                                <span class="opacity-60">${h.date}</span>
+                            <div class="flex justify-between items-center text-xs border-b ${borderClass} pb-2 pt-1">
+                                <span class="${textOpacity}">${h.date}</span>
                                 <span class="font-bold flex-1 ml-4">${h.staff}（${actionLabel}）</span>
                                 <span class="font-black ${colorClass}">${pointMark}${displayPoint.toLocaleString()} PT</span>
                             </div>`;
                     });
                 } else {
-                    histDiv.innerHTML = '<p class="text-center opacity-50 text-xs py-2">お取引履歴はありません</p>';
+                    histDiv.innerHTML = `<p class="text-center ${textOpacity} text-xs py-2">お取引履歴はありません</p>`;
                 }
 
                 document.getElementById('loading').style.display = 'none';
