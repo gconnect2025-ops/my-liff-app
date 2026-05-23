@@ -6,28 +6,43 @@
     <title>G-CONNECT ポイント付与</title>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* ゴールドの文字用グラデーション */
+        .text-gold {
+            background: linear-gradient(135deg, #b38728 0%, #fcf6ba 25%, #bf953f 50%, #fcf6ba 75%, #aa771c 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        /* ゴールドのボタン・枠線用グラデーション */
+        .bg-gold-gradient {
+            background: linear-gradient(135deg, #bf953f 0%, #fcf6ba 50%, #b38728 100%);
+        }
+        .border-gold {
+            border-image: linear-gradient(135deg, #bf953f, #fcf6ba, #b38728) 1;
+        }
+    </style>
 </head>
-<body class="bg-[#f4f6f9] text-[#001524] min-h-screen p-4 flex flex-col items-center font-sans">
+<body class="bg-white text-[#001524] min-h-screen p-4 flex flex-col items-center font-sans">
 
-    <div id="loading" class="fixed inset-0 bg-[#f4f6f9] flex flex-col items-center justify-center z-50">
-        <div class="animate-spin h-10 w-10 border-4 border-emerald-600 rounded-full border-t-transparent mb-4"></div>
+    <div id="loading" class="fixed inset-0 bg-white flex flex-col items-center justify-center z-50">
+        <div class="animate-spin h-10 w-10 border-4 border-[#bf953f] rounded-full border-t-transparent mb-4"></div>
         <p class="text-[#001524] font-bold">決済システムを起動中...</p>
     </div>
 
-    <div id="mainContent" style="display:none;" class="w-full max-w-sm bg-white rounded-[30px] p-6 border border-slate-200 shadow-xl">
-        <h2 class="text-xl font-black text-center mb-6 text-emerald-600 flex items-center justify-center gap-2">
+    <div id="mainContent" style="display:none;" class="w-full max-w-sm bg-white">
+        <h2 class="text-2xl font-black text-center mb-6 text-gold flex items-center justify-center gap-2 uppercase tracking-wider">
             💸 ポイント付与・送金
         </h2>
         
-        <div class="mb-5 bg-slate-100 p-3 rounded-2xl border border-slate-200">
-            <p class="text-[11px] font-bold text-slate-500 uppercase">操作者（あなた）</p>
-            <p id="myStaffName" class="text-base font-bold text-[#001524]">取得中...</p>
+        <div class="mb-5 bg-slate-50 p-3 rounded-2xl border border-slate-100">
+            <p class="text-[11px] font-bold text-slate-400 uppercase tracking-tight">操作者（あなた）</p>
+            <p id="myStaffName" class="text-base font-black text-[#001524]">取得中...</p>
         </div>
 
-        <div class="mb-5 bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
-            <p class="text-xs font-black text-emerald-600 uppercase tracking-wider">🔍 お相手を検索・絞り込み</p>
+        <div class="mb-5 bg-slate-50/50 p-4 rounded-2xl border border-slate-100 space-y-3">
+            <p class="text-xs font-black text-[#bf953f] uppercase tracking-wider">🔍 お相手を検索・絞り込み</p>
             <div>
-                <select id="searchCategory" onchange="filterMembers()" class="w-full bg-white border border-slate-300 rounded-xl p-2.5 text-[#001524] text-xs font-bold focus:outline-none focus:border-emerald-500 shadow-sm">
+                <select id="searchCategory" onchange="filterMembers()" class="w-full bg-white border border-slate-200 rounded-xl p-2.5 text-[#001524] text-xs font-bold focus:outline-none focus:border-[#bf953f] shadow-sm">
                     <option value="">-- すべてのカテゴリー --</option>
                     <option value="飲食・フード">飲食・フード</option>
                     <option value="建設・不動産">建設・不動産</option>
@@ -38,52 +53,60 @@
                 </select>
             </div>
             <div>
-                <input type="text" id="searchName" oninput="filterMembers()" placeholder="お名前・会社名で検索..." class="w-full bg-white border border-slate-300 rounded-xl p-2.5 text-[#001524] text-xs font-bold focus:outline-none focus:border-emerald-500 shadow-sm">
+                <input type="text" id="searchName" oninput="filterMembers()" placeholder="お名前・会社名で検索..." class="w-full bg-white border border-slate-200 rounded-xl p-2.5 text-[#001524] text-xs font-bold focus:outline-none focus:border-[#bf953f] shadow-sm">
             </div>
         </div>
 
         <form id="txForm" onsubmit="submitTx(event)" class="space-y-4">
             <div>
-                <label class="block text-xs font-black text-slate-600 mb-2 uppercase tracking-wider">1. 付与するお相手（お客様）</label>
-                <select id="customerSelect" required onchange="onCustomerChange()" class="w-full bg-white border-2 border-slate-200 rounded-xl p-3 text-[#001524] font-bold focus:outline-none focus:border-emerald-500 text-sm shadow-sm">
+                <label class="block text-xs font-black text-slate-500 mb-2 uppercase tracking-wider">1. 付与するお相手（お客様）</label>
+                <select id="customerSelect" required onchange="calculatePoints()" class="w-full bg-white border-2 border-slate-100 rounded-xl p-3 text-[#001524] font-bold focus:outline-none focus:border-[#bf953f] text-sm shadow-sm">
                     <option value="">-- お相手を選択してください --</option>
                 </select>
                 <p id="memberCount" class="text-[10px] text-right text-slate-400 mt-1 font-bold">対象: 0名</p>
             </div>
 
             <div>
-                <label class="block text-xs font-black text-slate-600 mb-2 uppercase tracking-wider">2. ご利用金額（税込）</label>
+                <label class="block text-xs font-black text-slate-500 mb-2 uppercase tracking-wider">2. ご利用金額（税込）</label>
                 <div class="relative">
-                    <input type="number" id="totalSales" required min="1" placeholder="例: 10000" oninput="calculatePoints()" class="w-full bg-white border-2 border-slate-200 rounded-xl p-3 text-[#001524] focus:outline-none focus:border-emerald-500 text-lg font-black shadow-sm">
-                    <span class="absolute right-4 top-3.5 font-black text-slate-400">円</span>
+                    <input type="number" id="totalSales" required min="1" placeholder="例: 10000" oninput="calculatePoints()" class="w-full bg-white border-2 border-slate-100 rounded-xl p-3 text-[#001524] focus:outline-none focus:border-[#bf953f] text-lg font-black shadow-sm">
+                    <span class="absolute right-4 top-3.5 font-black text-slate-300">円</span>
                 </div>
             </div>
 
             <div>
-                <label class="block text-xs font-black text-slate-600 mb-2 uppercase tracking-wider">3. 今回使用するポイント</label>
+                <label class="block text-xs font-black text-[#b38728] mb-2 uppercase tracking-wider">🔒 お店側が許可する利用上限ポイント</label>
                 <div class="relative">
-                    <input type="number" id="usedPoints" min="0" value="0" oninput="calculatePoints()" class="w-full bg-white border-2 border-slate-200 rounded-xl p-3 text-[#001524] focus:outline-none focus:border-emerald-500 text-lg font-black shadow-sm">
-                    <span class="absolute right-4 top-3.5 font-black text-slate-400">PT</span>
+                    <input type="number" id="maxLimitInput" min="0" value="2000" oninput="calculatePoints()" class="w-full bg-amber-50/30 border-2 border-amber-200 rounded-xl p-3 text-[#b38728] focus:outline-none focus:border-[#bf953f] text-lg font-black shadow-sm">
+                    <span class="absolute right-4 top-3.5 font-black text-amber-600/50">PT</span>
+                </div>
+                <p class="text-[10px] text-amber-700/70 font-bold mt-1">※この取引でお客様が使える最大値をここで設定（初期値: 2000）</p>
+            </div>
+
+            <div>
+                <label class="block text-xs font-black text-slate-500 mb-2 uppercase tracking-wider">3. 今回使用するポイント</label>
+                <div class="relative">
+                    <input type="number" id="usedPoints" min="0" value="0" oninput="calculatePoints()" class="w-full bg-white border-2 border-slate-100 rounded-xl p-3 text-[#001524] focus:outline-none focus:border-[#bf953f] text-lg font-black shadow-sm">
+                    <span class="absolute right-4 top-3.5 font-black text-slate-300">PT</span>
                 </div>
                 <div class="flex justify-between items-center mt-1 px-1">
-                    <p id="pointLimitDisplay" class="text-[11px] font-black text-blue-600">利用可能上限: -- PT</p>
-                    <p class="text-[10px] text-slate-400 font-bold">※使わない場合は0のまま</p>
+                    <p id="pointLimitDisplay" class="text-[11px] font-black text-amber-700">設定中の上限: 2,000 PT</p>
                 </div>
             </div>
 
             <div class="grid grid-cols-2 gap-3 pt-2">
-                <div class="bg-blue-50 border border-blue-200 p-3 rounded-xl text-center shadow-sm">
-                    <p class="text-[10px] text-blue-700 font-black mb-1">ポイント値引き</p>
-                    <p id="calcUse" class="text-xl font-black text-blue-600">0 <span class="text-xs">PT</span></p>
+                <div class="bg-amber-50/40 border border-amber-200/60 p-3 rounded-xl text-center shadow-sm">
+                    <p class="text-[10px] text-amber-800 font-black mb-1">ポイント値引き</p>
+                    <p id="calcUse" class="text-xl font-black text-[#b38728]">0 <span class="text-xs">PT</span></p>
                 </div>
-                <div class="bg-emerald-50 border border-emerald-200 p-3 rounded-xl text-center shadow-sm">
-                    <p class="text-[10px] text-emerald-700 font-black mb-1">差引後 新規付与</p>
-                    <p id="calcEarn" class="text-xl font-black text-emerald-600">0 <span class="text-xs">PT</span></p>
+                <div class="bg-amber-50/40 border border-amber-200/60 p-3 rounded-xl text-center shadow-sm">
+                    <p class="text-[10px] text-amber-800 font-black mb-1">差引後 新規付与</p>
+                    <p id="calcEarn" class="text-xl font-black text-[#b38728]">0 <span class="text-xs">PT</span></p>
                 </div>
             </div>
 
             <div class="pt-4">
-                <button type="submit" id="submitBtn" class="w-full bg-gradient-to-r from-emerald-500 to-teal-600 text-white py-4 rounded-full text-sm font-black shadow-md hover:opacity-90 active:scale-[0.98] transition-all">
+                <button type="submit" id="submitBtn" class="w-full bg-gold-gradient text-white py-4 rounded-full text-sm font-black shadow-md hover:opacity-90 active:scale-[0.98] transition-all tracking-widest">
                     🚀 ポイント取引を確定する
                 </button>
             </div>
@@ -97,7 +120,6 @@
         let myProfile = null;
         let staffUser = null;
         let allMembers = []; 
-        let selectedCustomerPoints = 0; // 選択されたお客様の所持ポイント上限
 
         async function init() {
             try {
@@ -131,8 +153,6 @@
             list.forEach(m => {
                 const opt = document.createElement('option');
                 opt.value = m.名前;
-                // 後からポイント上限を取り出せるように、データ属性として現在のポイント数を埋め込んでおきます
-                opt.setAttribute('data-points', m.ポイント || 0);
                 opt.innerText = `${m.名前} 様 [${m.会社名}] (${m.会員番号 || '番号未発行'})`;
                 select.appendChild(opt);
             });
@@ -140,16 +160,17 @@
             document.getElementById('memberCount').innerText = `対象: ${list.length}名`;
         }
 
-        // 🔍 カテゴリーと名前検索でリアルタイムにメンバーを絞り込む関数
+        // 🔍 カテゴリーと名前検索（部分一致・記号無視対応）
         function filterMembers() {
             const catKeyword = document.getElementById('searchCategory').value;
             const nameKeyword = document.getElementById('searchName').value.toLowerCase().trim();
 
             const filtered = allMembers.filter(m => {
-               const matchCat = catKeyword === "" || 
-                 m.カテゴリー.includes(catKeyword.replace(/・|| /g, "")) || 
-                 catKeyword.includes(m.カテゴリー.replace(/・|| /g, "")) ||
-                 m.カテゴリー === catKeyword;
+                const matchCat = catKeyword === "" || 
+                                 m.カテゴリー.includes(catKeyword.replace(/・| /g, "")) || 
+                                 catKeyword.includes(m.カテゴリー.replace(/・| /g, "")) ||
+                                 m.カテゴリー === catKeyword;
+                                 
                 const matchName = nameKeyword === "" || 
                                   m.名前.toLowerCase().includes(nameKeyword) || 
                                   m.会社名.toLowerCase().includes(nameKeyword);
@@ -157,44 +178,27 @@
             });
 
             renderMemberList(filtered);
-            document.getElementById('pointLimitDisplay').innerText = "利用可能上限: -- PT";
-            selectedCustomerPoints = 0;
         }
 
-        // 💡 お相手が選ばれたときに、その人のポイント上限を画面に表示する関数
-        function onCustomerChange() {
-            const select = document.getElementById('customerSelect');
-            const selectedOption = select.options[select.selectedIndex];
-            
-            if (selectedOption && selectedOption.value !== "") {
-                // 埋め込んでおいたポイント数を取得
-                selectedCustomerPoints = Number(selectedOption.getAttribute('data-points')) || 0;
-                document.getElementById('pointLimitDisplay').innerText = `利用可能上限: ${selectedCustomerPoints.toLocaleString()} PT`;
-            } else {
-                document.getElementById('pointLimitDisplay').innerText = "利用可能上限: -- PT";
-                selectedCustomerPoints = 0;
-            }
-            calculatePoints();
-        }
-
-        // 📊 取引金額と利用ポイントから、値引き後の差引ポイントを計算する関数
+        // 📊 ポイントリアルタイム計算
         function calculatePoints() {
             const amt = Number(document.getElementById('totalSales').value) || 0;
+            let maxLimit = Number(document.getElementById('maxLimitInput').value) || 0;
             let used = Number(document.getElementById('usedPoints').value) || 0;
             
-            // 💡入力されたポイントがお客様の所持上限を超えていたら自動でストッパーをかける
-            if (used > selectedCustomerPoints) {
-                alert(`お相手の所持ポイント上限（${selectedCustomerPoints} PT）を超えています。自動的に上限値に修正します。`);
-                used = selectedCustomerPoints;
+            document.getElementById('pointLimitDisplay').innerText = `設定中の上限: ${maxLimit.toLocaleString()} PT`;
+
+            if (used > maxLimit) {
+                alert(`お店側が設定した利用上限（${maxLimit} PT）を超えています。自動的に上限値に修正します。`);
+                used = maxLimit;
                 document.getElementById('usedPoints').value = used;
             }
 
-            // ご利用金額から利用ポイントを引いた「残金」に対して3%を計算
             let baseAmt = amt - used;
             if (baseAmt < 0) baseAmt = 0; 
 
             let earn = Math.floor(baseAmt * 0.03);
-            if (earn > 5000) earn = 5000; // 上限5000PT制限
+            if (earn > 5000) earn = 5000; 
             
             document.getElementById('calcUse').innerText = `${used.toLocaleString()} PT`;
             document.getElementById('calcEarn').innerText = `${earn.toLocaleString()} PT`;
@@ -207,10 +211,11 @@
             const customerName = document.getElementById('customerSelect').value;
             const totalSales = Number(document.getElementById('totalSales').value) || 0;
             const usedPoints = Number(document.getElementById('usedPoints').value) || 0;
+            const maxLimit = Number(document.getElementById('maxLimitInput').value) || 0;
             
             if (!customerName) { alert("お相手を選択してください。"); return; }
             if (totalSales < usedPoints) { alert("利用ポイントがご利用金額を超えています。"); return; }
-            if (usedPoints > selectedCustomerPoints) { alert("お相手の所持ポイント上限を超えています。"); return; }
+            if (usedPoints > maxLimit) { alert("設定された利用上限を超えています。"); return; }
             
             let baseAmt = totalSales - usedPoints;
             if (baseAmt < 0) baseAmt = 0;
