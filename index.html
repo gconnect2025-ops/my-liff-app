@@ -108,7 +108,7 @@
         let myProfile = null;
         let staffUser = null;
         let allMembers = []; 
-        let maxLimitPoints = 0; 
+        let maxLimitPoints = 0; // スプレッドシートP列の上限値を保持する変数
 
         async function init() {
             try {
@@ -120,9 +120,10 @@
                 const data = await response.json();
                 
                 staffUser = data.user;
-                document.getElementById('myStaffName').innerText = `${staffUser.realName} 様 (${staffUser.company || '加盟店'})`;
+                document.getElementById('myStaffName').innerText = `${staffUser.realName} Ext 様 (${staffUser.company || '加盟店'})`;
 
-                maxLimitPoints = Number(staffUser.points) || 0;
+                // 💡【重要】操作者自身のスプレッドシート「P列（16番目のデータ）」から上限ポイントを取得してセット
+                maxLimitPoints = Number(staffUser.limitPoints) || 0; 
                 document.getElementById('pointLimitDisplay').innerText = `設定中の上限: ${maxLimitPoints.toLocaleString()} PT`;
 
                 if (data.members && data.members.length > 0) {
@@ -131,121 +132,3 @@
                 }
 
                 document.getElementById('loading').style.display = 'none';
-                document.getElementById('mainContent').style.display = 'block';
-            } catch(e) {
-                console.error(e);
-                alert("システムの初期化に失敗しました。時間をおいて再度お試しください。");
-            }
-        }
-
-        function renderMemberList(list) {
-            const select = document.getElementById('customerSelect');
-            select.innerHTML = '<option value="">-- お相手を選択してください --</option>';
-            
-            list.forEach(m => {
-                const opt = document.createElement('option');
-                opt.value = m.名前;
-                opt.innerText = `${m.名前} 様 [${m.会社名}] (${m.会員番号 || '番号未発行'})`;
-                select.appendChild(opt);
-            });
-
-            document.getElementById('memberCount').innerText = `対象: ${list.length}名`;
-        }
-
-        // 🔍 カテゴリー・名前検索（中村さんを絶対に迷子にさせない強化版ロジック）
-        function filterMembers() {
-            const catKeyword = document.getElementById('searchCategory').value;
-            const nameKeyword = document.getElementById('searchName').value.toLowerCase().trim();
-
-            const filtered = allMembers.filter(m => {
-                // 💡名前や会社名に検索キーワードが直接入力されている場合は、カテゴリーの一致チェックをスキップして最優先でヒットさせます！
-                let matchCat = true;
-                if (nameKeyword === "") {
-                    if (catKeyword !== "") {
-                        const cleanKeyword = catKeyword.substring(0, 2); 
-                        matchCat = m.カテゴリー.includes(cleanKeyword);
-                    }
-                }
-                                 
-                const matchName = nameKeyword === "" || 
-                                  m.名前.toLowerCase().includes(nameKeyword) || 
-                                  m.会社名.toLowerCase().includes(nameKeyword);
-                return matchCat && matchName;
-            });
-
-            renderMemberList(filtered);
-        }
-
-        // 📊 ポイントリアルタイム計算
-        function calculatePoints() {
-            const amt = Number(document.getElementById('totalSales').value) || 0;
-            let used = Number(document.getElementById('usedPoints').value) || 0;
-            
-            document.getElementById('pointLimitDisplay').innerText = `設定中の上限: ${maxLimitPoints.toLocaleString()} PT`;
-
-            if (used > maxLimitPoints) {
-                alert(`利用可能上限（${maxLimitPoints} PT）を超えています。自動的に上限値に修正します。`);
-                used = maxLimitPoints;
-                document.getElementById('usedPoints').value = used;
-            }
-
-            let baseAmt = amt - used;
-            if (baseAmt < 0) baseAmt = 0; 
-
-            let earn = Math.floor(baseAmt * 0.03);
-            if (earn > 5000) earn = 5000; 
-            
-            document.getElementById('calcUse').innerText = `${used.toLocaleString()} PT`;
-            document.getElementById('calcEarn').innerText = `${earn.toLocaleString()} PT`;
-        }
-
-        // 取引確定処理
-        async function submitTx(e) {
-            e.preventDefault();
-            
-            const customerName = document.getElementById('customerSelect').value;
-            const totalSales = Number(document.getElementById('totalSales').value) || 0;
-            const usedPoints = Number(document.getElementById('usedPoints').value) || 0;
-            
-            if (!customerName) { alert("お相手を選択してください。"); return; }
-            if (totalSales < usedPoints) { alert("利用ポイントがご利用金額を超えています。"); return; }
-            if (usedPoints > maxLimitPoints) { alert("利用可能上限を超えています。"); return; }
-            
-            let baseAmt = totalSales - usedPoints;
-            if (baseAmt < 0) baseAmt = 0;
-            let earnedPoints = Math.floor(baseAmt * 0.03);
-            if (earnedPoints > 5000) earnedPoints = 5000;
-            
-            const btn = document.getElementById('submitBtn');
-            btn.disabled = true;
-            btn.innerText = "処理中... 画面を閉じないでください";
-
-            try {
-                const payload = {
-                    totalSales: totalSales,
-                    usedPoints: usedPoints,
-                    earnedPoints: earnedPoints,
-                    staffId: myProfile.userId,
-                    staffName: staffUser.realName,
-                    customerName: customerName
-                };
-
-                const res = await fetch(GAS_URL, {
-                    method: "POST",
-                    body: JSON.stringify(payload)
-                });
-                
-                alert(`ポイント取引が正常に完了しました！\n\n【内容】\nお相手: ${customerName} 様\n付与ポイント: +${earnedPoints} PT\n利用ポイント: -${usedPoints} PT`);
-                liff.closeWindow(); 
-            } catch(err) {
-                console.error(err);
-                alert("通信エラーが発生しました。");
-                btn.disabled = false;
-                btn.innerText = "🚀 ポイント取引を確定する";
-            }
-        }
-
-        window.onload = init;
-    </script>
-</body>
-</html>
