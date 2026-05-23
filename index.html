@@ -126,51 +126,55 @@
                     return;
                 }
 
-                // 画面要素への値のセット
-                document.getElementById('userRank').innerText = user.rank || "レギュラー";
-                document.getElementById('userCompany').innerText = user.company || "G-CONNECT";
-                document.getElementById('userName').innerText = user.realName + " 様";
-                document.getElementById('userCategory').innerText = user.category || "未設定";
-                document.getElementById('userExp').innerText = user.exp || "--/--";
-                document.getElementById('userPoints').innerHTML = `${Number(user.points).toLocaleString()}<span class="point-unit">PT</span>`;
+               // 画面要素への値のセット
+document.getElementById('userRank').innerText = user.rank || "レギュラー";
+document.getElementById('userCompany').innerText = user.company || "G-CONNECT";
+document.getElementById('userName').innerText = user.realName + " 様";
+document.getElementById('userCategory').innerText = user.category || "未設定";
+document.getElementById('userExp').innerText = user.exp || "--/--";
+
+// 💡【ポイント残高の修正】確実に数字に変換し、カンマ区切りで「PT」を表示させます
+const currentPoints = Number(user.points) || 0;
+document.getElementById('userPoints').innerHTML = `${currentPoints.toLocaleString()}<span class="point-unit">PT</span>`;
                 
-                // ★D列の会員番号を表示
-                document.getElementById('memberNoDisplay').innerText = `会員番号: ${user.memberNo || "未発行"}`;
+// ★D列の会員番号を表示
+document.getElementById('memberNoDisplay').innerText = `会員番号: ${user.memberNo || "未発行"}`;
 
-                // ★【超重要修正】D列の会員番号（memberNo）を読み込んでQRコード化する
-                if (user.memberNo) {
-                    document.getElementById('qrCode').src = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(user.memberNo)}`;
-                } else {
-                    // 万が一会員番号が空だった場合はLINE IDで代用
-                    document.getElementById('qrCode').src = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(user.userId)}`;
-                }
+// ★D列の会員番号（memberNo）を読み込んでQRコード化する
+if (user.memberNo) {
+    document.getElementById('qrCode').src = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(user.memberNo)}`;
+} else {
+    document.getElementById('qrCode').src = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(user.userId)}`;
+}
 
-                // 履歴リストの組み立て
-                const listContainer = document.getElementById('historyList');
-                listContainer.innerHTML = ''; 
+// 💡【お取引履歴の修正】履歴リストの組み立て
+const listContainer = document.getElementById('historyList');
+listContainer.innerHTML = ''; 
 
-                if (user.historyList && user.historyList.length > 0) {
-                    user.historyList.forEach(item => {
-                        const div = document.createElement('div');
-                        div.className = 'history-item';
-                        
-                        const sign = item.type === 'plus' ? '+' : '-';
-                        const colorClass = item.type === 'plus' ? 'text-plus' : 'text-minus';
-                        
-                        div.innerHTML = `
-                            <div class="hist-info">
-                                <span class="hist-date">${item.date}</span>
-                                <span class="hist-staff">${item.staff}</span>
-                            </div>
-                            <div class="hist-amount ${colorClass}">
-                                ${sign}${Number(item.point).toLocaleString()} PT
-                            </div>
-                        `;
-                        listContainer.appendChild(div);
-                    });
-                } else {
-                    listContainer.innerHTML = '<p class="text-muted text-center small py-3 mb-0">お取引履歴はありません</p>';
-                }
+if (user.historyList && user.historyList.length > 0) {
+    user.historyList.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'history-item';
+        
+        // plus（入金受領）なら「+」、minus（付与発行）なら「-」
+        const sign = item.type === 'plus' ? '+' : '-';
+        const colorClass = item.type === 'plus' ? 'text-plus' : 'text-minus';
+        const displayPoint = Number(item.point) || 0;
+        
+        div.innerHTML = `
+            <div class="hist-info">
+                <span class="hist-date">${item.date}</span>
+                <span class="hist-staff">${item.staff}</span>
+            </div>
+            <div class="hist-amount ${colorClass}">
+                ${sign}${displayPoint.toLocaleString()} PT
+            </div>
+        `;
+        listContainer.appendChild(div);
+    });
+} else {
+    listContainer.innerHTML = '<p class="text-muted text-center small py-3 mb-0">お取引履歴はありません</p>';
+}
 
             } catch (e) {
                 console.error(e);
