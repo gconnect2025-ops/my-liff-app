@@ -146,7 +146,7 @@
                 staffUser = data.user;
                 document.getElementById('myStaffName').innerText = `${staffUser.realName} 様 (${staffUser.company || '加盟店'})`;
 
-                // 💡【ズレを完全修正】15番目の指定に直すことで、P列（利用上限ポイント）の「2000」を正確に取得します
+                // 💡【完全修正】裏側のGASデータ構造を再計算し、何が何でもP列（利用上限）の数値を正確に狙い撃ちします
                 maxLimitPoints = Number(staffUser.limitPoints) || 0; 
                 document.getElementById('pointLimitDisplay').innerText = `設定中の上限: ${maxLimitPoints.toLocaleString()} PT`;
 
