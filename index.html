@@ -3,158 +3,164 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>G-CONNECT 会員証</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
-    <style>
-        body { background-color: #f4f6f9; font-family: 'Helvetica Neue', Arial, sans-serif; padding-bottom: 30px; }
-        .card-container { max-width: 450px; margin: 20px auto; padding: 0 15px; }
-        .member-card { background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: white; border-radius: 15px; padding: 25px; box-shadow: 0 10px 20px rgba(0,0,0,0.15); position: relative; overflow: hidden; margin-bottom: 25px; }
-        .member-card::before { content: ""; position: absolute; top: -50%; right: -20%; width: 300px; height: 300px; background: rgba(255,255,255,0.03); border-radius: 50%; }
-        .card-brand { font-size: 1.4rem; font-weight: bold; letter-spacing: 1px; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 10px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
-        .card-rank { font-size: 0.8rem; background: rgba(255,255,255,0.2); padding: 3px 10px; border-radius: 20px; font-weight: normal; }
-        .info-label { font-size: 0.75rem; color: rgba(255,255,255,0.7); margin-bottom: 2px; text-transform: uppercase; }
-        .info-value { font-size: 1.1rem; font-weight: 500; margin-bottom: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .point-display { background: rgba(255,255,255,0.1); border-radius: 10px; padding: 15px; margin-top: 15px; text-align: center; backdrop-filter: blur(5px); }
-        .point-display .info-label { color: rgba(255,255,255,0.8); font-size: 0.85rem; }
-        .point-amount { font-size: 2.2rem; font-weight: bold; color: #fff; margin-top: 5px; line-height: 1; }
-        .point-unit { font-size: 1.1rem; margin-left: 5px; font-weight: normal; }
-        .qr-section { background: white; border-radius: 15px; padding: 25px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); text-align: center; margin-bottom: 25px; }
-        .qr-holder { background: #f8f9fa; padding: 15px; border-radius: 10px; display: inline-block; margin-bottom: 15px; border: 1px solid #e9ecef; }
-        .qr-holder img { display: block; max-width: 100%; height: auto; }
-        .history-section { background: white; border-radius: 15px; padding: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
-        .history-title { font-size: 1rem; font-weight: bold; color: #333; margin-bottom: 15px; padding-bottom: 8px; border-bottom: 2px solid #f4f6f9; display: flex; align-items: center; }
-        .history-title i { margin-right: 8px; color: #1e3c72; }
-        .history-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #f8f9fa; font-size: 0.9rem; }
-        .history-item:last-child { border-bottom: none; }
-        .hist-info { display: flex; flex-direction: column; max-width: 70%; }
-        .hist-date { font-size: 0.75rem; color: #999; margin-bottom: 2px; }
-        .hist-staff { color: #444; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .hist-amount { font-weight: bold; font-size: 1rem; text-align: right; }
-        .text-plus { color: #2b7de9; }
-        .text-minus { color: #eb4d4b; }
-        .loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; display: flex; justify-content: center; align-items: center; z-index: 9999; transition: opacity 0.3s ease; }
-        .unregistered-message { text-align: center; color: #666; padding: 30px 10px; }
-    </style>
+    <title>G-CONNECT ポイント付与</title>
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-    <div id="loading" class="loading-overlay">
-        <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>
+<body class="bg-[#001524] text-white min-h-screen p-4 flex flex-col items-center">
+
+    <div id="loading" class="fixed inset-0 bg-[#001524] flex flex-col items-center justify-center z-50">
+        <div class="animate-spin h-10 w-10 border-4 border-emerald-500 rounded-full border-t-transparent mb-4"></div>
+        <p>決済システムを起動中...</p>
     </div>
 
-    <div class="card-container d-none" id="content">
-        <div class="member-card">
-            <div class="card-brand"><span>G-CONNECT</span><span class="card-rank" id="userRank">--</span></div>
-            <div class="row">
-                <div class="col-7">
-                    <div class="info-label">Company</div><div class="info-value" id="userCompany">--</div>
-                    <div class="info-label">Name</div><div class="info-value" id="userName">--</div>
-                </div>
-                <div class="col-5 border-start border-white border-opacity-10 ps-3">
-                    <div class="info-label">Category</div><div class="info-value" id="userCategory" style="font-size: 0.95rem;">--</div>
-                    <div class="info-label">Expiration</div><div class="info-value" id="userExp">--</div>
+    <div id="mainContent" style="display:none;" class="w-full max-w-sm bg-slate-900/50 backdrop-blur-md rounded-[30px] p-6 border border-white/10 shadow-2xl">
+        <h2 class="text-xl font-black text-center mb-6 text-emerald-400">💸 ポイント付与・送金</h2>
+        
+        <div class="mb-4 bg-white/5 p-3 rounded-2xl border border-white/5">
+            <p class="text-xs opacity-60">操作者（あなた）</p>
+            <p id="myStaffName" class="text-lg font-bold text-white">取得中...</p>
+        </div>
+
+        <form id="txForm" onsubmit="submitTx(event)" class="space-y-4">
+            <div>
+                <label class="block text-xs font-bold opacity-60 mb-2 uppercase tracking-wider">1. 付与するお相手（お客様）</label>
+                <select id="customerSelect" required class="w-full bg-slate-800 border border-white/20 rounded-xl p-3 text-white focus:outline-none focus:border-emerald-500 text-sm">
+                    <option value="">-- お相手を選択してください --</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold opacity-60 mb-2 uppercase tracking-wider">2. ご利用金額（税込）</label>
+                <div class="relative">
+                    <input type="number" id="totalSales" required min="1" placeholder="例: 10000" oninput="calculatePoints()" class="w-full bg-slate-800 border border-white/20 rounded-xl p-3 text-white focus:outline-none focus:border-emerald-500 text-lg font-bold">
+                    <span class="absolute right-4 top-3.5 font-bold opacity-60">円</span>
                 </div>
             </div>
-            <div class="point-display">
-                <div class="info-label"><i class="bi bi-coin me-1"></i>応援ポイント残高</div>
-                <div class="point-amount" id="userPoints">0<span class="point-unit">PT</span></div>
+
+            <div class="grid grid-cols-2 gap-3 pt-2">
+                <div class="bg-blue-950/40 border border-blue-500/20 p-3 rounded-xl text-center">
+                    <p class="text-[10px] opacity-60 font-bold mb-1">利用可能ポイント</p>
+                    <p id="calcUse" class="text-xl font-black text-blue-400">0 <span class="text-xs">PT</span></p>
+                </div>
+                <div class="bg-emerald-950/40 border border-emerald-500/20 p-3 rounded-xl text-center">
+                    <p class="text-[10px] opacity-60 font-bold mb-1">新しく貯まるポイント</p>
+                    <p id="calcEarn" class="text-xl font-black text-emerald-400">0 <span class="text-xs">PT</span></p>
+                </div>
             </div>
-        </div>
 
-        <div class="mb-4">
-            <a href="https://gconnect2025-ops.github.io/my-liff-app/pay.html" class="btn btn-dark w-full py-3 rounded-pill shadow font-weight-bold d-block text-center text-white text-decoration-none" style="background-color: #001524; font-size: 1rem;">
-                💸 ポイントを付与する
-            </a>
-        </div>
+            <div class="pt-2">
+                <label class="block text-xs font-bold opacity-60 mb-2 uppercase tracking-wider">3. 今回使用するポイント</label>
+                <div class="relative">
+                    <input type="number" id="usedPoints" min="0" value="0" class="w-full bg-slate-800 border border-white/20 rounded-xl p-3 text-white focus:outline-none focus:border-emerald-500 text-lg font-bold">
+                    <span class="absolute right-4 top-3.5 font-bold opacity-60">PT</span>
+                </div>
+                <p class="text-[10px] opacity-40 mt-1">※お相手がポイントを使用しない場合は0のままで進めてください</p>
+            </div>
 
-        <div class="qr-section" id="qrSection">
-            <h5 class="mb-3" style="font-size: 1rem; font-weight: bold; color: #444;">お店での決済時に提示</h5>
-            <div class="qr-holder"><img id="qrCode" src="" alt="QRコード" width="160" height="160"></div>
-            <p class="text-muted small mb-0" id="memberNoDisplay">会員番号: --</p>
-        </div>
-
-        <div class="history-section" id="historySection">
-            <div class="history-title"><i class="bi bi-clock-history"></i>ポイントお取引履歴 (直近10件)</div>
-            <div id="historyList"></div>
-        </div>
-
-        <div class="unregistered-message d-none" id="unregisteredBox">
-            <i class="bi bi-exclamation-circle text-warning display-4 mb-3 d-block"></i>
-            <h5>会員情報が見つかりません</h5>
-            <p class="text-muted small mt-2">LINE公式アカウントで「登録」と送信し、初期登録を完了させてください。</p>
-        </div>
+            <div class="pt-4">
+                <button type="submit" id="submitBtn" class="w-full bg-gradient-to-r from-emerald-500 to-teal-600 text-white py-4 rounded-full text-sm font-black shadow-lg hover:opacity-90 active:scale-[0.98] transition-all">
+                    🚀 ポイント取引を確定する
+                </button>
+            </div>
+        </form>
     </div>
 
-    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <script>
-        const GAS_URL_CARD = "https://script.google.com/macros/s/AKfycbzP8_WdVfsMHLRFq0fxgAtm0EwZQWnuSV_ThGxfeWcqKlNtEYp6I_EiHDKXjJUqJqPJVw/exec"; 
+        // 菅田様の動いている最新のGAS本番URLを完全直結しています
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbzP8_WdVfsMHLRFq0fxgAtm0EwZQWnuSV_ThGxfeWcqKlNtEYp6I_EiHDKXjJUqJqPJVw/exec";
+        const LIFF_ID = "2007046922-EHW4nk35"; // ポイント画面専用のLIFF ID
+
+        let myProfile = null;
+        let staffUser = null;
 
         async function init() {
             try {
-                await liff.init({ liffId: "2007046922-d6brbL9k" }); 
+                await liff.init({ liffId: LIFF_ID });
                 if (!liff.isLoggedIn()) { liff.login(); return; }
-                const profile = await liff.getProfile();
-                const userId = profile.userId;
-
-                const res = await fetch(`${GAS_URL_CARD}?userId=${encodeURIComponent(userId)}`);
-                const data = await res.json();
-                const user = data.user;
-
-                document.getElementById('loading').classList.add('d-none');
-                document.getElementById('content').classList.remove('d-none');
-
-                if (!user || !user.isRegistered) {
-                    document.querySelector('.member-card').classList.add('d-none');
-                    document.getElementById('qrSection').classList.add('d-none');
-                    document.getElementById('historySection').classList.add('d-none');
-                    document.getElementById('unregisteredBox').classList.remove('d-none');
-                    return;
-                }
-
-                document.getElementById('userRank').innerText = user.rank || "レギュラー";
-                document.getElementById('userCompany').innerText = user.company || "G-CONNECT";
-                document.getElementById('userName').innerText = user.realName + " 様";
-                document.getElementById('userCategory').innerText = user.category || "未設定";
-                document.getElementById('userExp').innerText = user.exp || "--/--";
+                myProfile = await liff.getProfile();
                 
-                const currentPoints = Number(user.points) || 0;
-                document.getElementById('userPoints').innerHTML = `${currentPoints.toLocaleString()}<span class="point-unit">PT</span>`;
-                document.getElementById('memberNoDisplay').innerText = `会員番号: ${user.memberNo || "未発行"}`;
+                // GASから自分の情報とメンバー一覧を同時に取得
+                const response = await fetch(`${GAS_URL}?userId=${encodeURIComponent(myProfile.userId)}`);
+                const data = await response.json();
+                
+                staffUser = data.user;
+                document.getElementById('myStaffName').innerText = `${staffUser.realName} 様 (${staffUser.company || '加盟店'})`;
 
-                if (user.qrUrl && user.qrUrl.includes("http")) {
-                    document.getElementById('qrCode').src = user.qrUrl;
-                } else {
-                    const cleanMemberNo = user.memberNo || user.userId;
-                    document.getElementById('qrCode').src = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(cleanMemberNo)}`;
-                }
-
-                const listContainer = document.getElementById('historyList');
-                listContainer.innerHTML = ''; 
-
-                if (user.historyList && user.historyList.length > 0) {
-                    user.historyList.forEach(item => {
-                        const div = document.createElement('div');
-                        div.className = 'history-item';
-                        const sign = item.type === 'plus' ? '+' : '-';
-                        const colorClass = item.type === 'plus' ? 'text-plus' : 'text-minus';
-                        const displayPoint = Number(item.point) || 0;
-                        
-                        div.innerHTML = `
-                            <div class="hist-info">
-                                <span class="hist-date">${item.date}</span>
-                                <span class="hist-staff">${item.staff}</span>
-                            </div>
-                            <div class="hist-amount ${colorClass}">${sign}${displayPoint.toLocaleString()} PT</div>`;
-                        listContainer.appendChild(div);
+                // セレクトボックスにメンバー（D列・E列・F列）を全員自動追加
+                const select = document.getElementById('customerSelect');
+                if (data.members && data.members.length > 0) {
+                    data.members.forEach(m => {
+                        // 自分自身は選択肢から除外する（誤操作防止）
+                        if (m.userId !== myProfile.userId && m.名前 !== "ゲスト") {
+                            const opt = document.createElement('option');
+                            opt.value = m.名前;
+                            opt.innerText = `${m.名前} 様 [${m.会社名}] (${m.会員番号 || '番号未発行'})`;
+                            select.appendChild(opt);
+                        }
                     });
-                } else {
-                    listContainer.innerHTML = '<p class="text-muted text-center small py-3 mb-0">お取引履歴はありません</p>';
                 }
-            } catch (e) {
+
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('mainContent').style.display = 'block';
+            } catch(e) {
                 console.error(e);
-                alert("データの取得に失敗しました。");
+                alert("システムの初期化に失敗しました。時間をおいて再度お試しください。");
             }
         }
+
+        // 金額入力時に3%付与分をリアルタイム自動計算する関数
+        function calculatePoints() {
+            const amt = Number(document.getElementById('totalSales').value) || 0;
+            // 3%計算（上限5000PT制限ルール適用）
+            let earn = Math.floor(amt * 0.03);
+            if (earn > 5000) earn = 5000;
+            
+            document.getElementById('calcEarn').innerText = `${earn.toLocaleString()} PT`;
+        }
+
+        // 確定ボタンを押したときの処理（スプレッドシートへの一発書き込み送信）
+        async function submitTx(e) {
+            e.preventDefault();
+            
+            const customerName = document.getElementById('customerSelect').value;
+            const totalSales = Number(document.getElementById('totalSales').value) || 0;
+            const usedPoints = Number(document.getElementById('usedPoints').value) || 0;
+            
+            let earnedPoints = Math.floor(totalSales * 0.03);
+            if (earnedPoints > 5000) earnedPoints = 5000;
+
+            if (!customerName) { alert("お相手を選択してください。"); return; }
+            
+            const btn = document.getElementById('submitBtn');
+            btn.disabled = true;
+            btn.innerText = "処理中... 画面を閉じないでください";
+
+            try {
+                const payload = {
+                    totalSales: totalSales,
+                    usedPoints: usedPoints,
+                    earnedPoints: earnedPoints,
+                    staffId: myProfile.userId,
+                    staffName: staffUser.realName,
+                    customerName: customerName
+                };
+
+                const res = await fetch(GAS_URL, {
+                    method: "POST",
+                    body: JSON.stringify(payload)
+                });
+                
+                alert(`ポイント取引が正常に完了しました！\n\n【内容】\nお相手: ${customerName} 様\n付与ポイント: +${earnedPoints} PT\n利用ポイント: -${usedPoints} PT`);
+                liff.closeWindow(); // 取引完了後にLINEの画面を自動でパッと閉じます
+            } catch(err) {
+                console.error(err);
+                alert("通信エラーが発生しました。スプレッドシートの書き込み状況を確認してください。");
+                btn.disabled = false;
+                btn.innerText = "🚀 ポイント取引を確定する";
+            }
+        }
+
         window.onload = init;
     </script>
 </body>
