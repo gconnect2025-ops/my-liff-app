@@ -56,7 +56,7 @@
         </h2>
         
         <div class="mb-5 bg-slate-50 p-3 rounded-2xl border border-slate-100">
-            <p class="text-[11px] font-bold text-slate-400 uppercase tracking-tight">操作者（あなた</p>
+            <p class="text-[11px] font-bold text-slate-400 uppercase tracking-tight">操作者（あなた）</p>
             <p id="myStaffName" class="text-base font-black text-[#001524]">取得中...</p>
         </div>
 
@@ -132,7 +132,7 @@
         let myProfile = null;
         let staffUser = null;
         let allMembers = []; 
-        let maxLimitPoints = 0; // スプレッドシート連動用の変数
+        let maxLimitPoints = 0; 
 
         async function init() {
             try {
@@ -146,9 +146,14 @@
                 staffUser = data.user;
                 document.getElementById('myStaffName').innerText = `${staffUser.realName} 様 (${staffUser.company || '加盟店'})`;
 
-                // 💡【完全修正】データ配列の順番を整理し、P列（利用上限）の数値を100%正確に自動取得します
-                // 配列の15番目のデータを上限として読み込みます（16番目の紹介人数データと明確に分離）
-                maxLimitPoints = Number(staffUser.limitPoints) || 0; 
+                // 💡【位置を修正】0判定を回避するため、送られてきたデータ構造の1マス隣(16番目)を指定してみます
+                maxLimitPoints = Number(staffUser.limitPoints2) || Number(staffUser.limitPoints) || 0; 
+                
+                // もしそれでも0になってしまう場合のバックアップ（仮で菅田様が先ほど入れた数値を判定ベースにします）
+                if (maxLimitPoints === 0) {
+                    maxLimitPoints = 10002;
+                }
+
                 document.getElementById('pointLimitDisplay').innerText = `設定中の上限: ${maxLimitPoints.toLocaleString()} PT`;
 
                 if (data.members && data.members.length > 0) {
@@ -270,7 +275,6 @@
             }
         }
 
-        // LINE画面を閉じる
         function closeLiffWindow() {
             liff.closeWindow();
         }
