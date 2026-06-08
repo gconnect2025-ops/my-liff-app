@@ -15,10 +15,10 @@
         .bg-silver   { background: linear-gradient(135deg, #7f8c8d, #bdc3c7); color: #1a1a1a; }
         .bg-bronze   { background: linear-gradient(135deg, #804e2d, #e68e53); color: white; }
         
-        /* 💡レギュラー（初期状態）のグラデーション */
+        /* レギュラー（初期状態）のグラデーション */
         .bg-regular  { background: linear-gradient(135deg, #00223e, #00335c); color: #ffffff; }
         
-        /* 💡【新機能】ゲスト（未入会など）の時は「純白ベース」に設定（文字色を自動反転） */
+        /* ゲスト（未入会など）の時は「純白ベース」に設定（文字色を自動反転） */
         .bg-guest    { background: #ffffff !important; color: #001524 !important; }
         
         /* 半透明のボックス（背景に応じて馴染むように調整） */
@@ -111,7 +111,37 @@
                 
                 const currentPoints = Number(user.points) || 0;
                 document.getElementById('mainPoints').innerHTML = `${currentPoints.toLocaleString()}<span class="text-sm font-bold ml-1">PT</span>`;
-                document.getElementById('mainExp').innerText = `有効期限: ${user.exp || "--/--"}`;
+                
+                // 💡【新機能】残りの日数をその場でリアルタイムに計算する処理を追加
+                let expDisplay = `有効期限: ${user.exp || "--/--"}`;
+                if (user.exp && user.exp !== "--/--") {
+                    const now = new Date();
+                    now.setHours(0,0,0,0);
+                    
+                    // 今年の年を取得し、MM/dd を日付オブジェクトに復元
+                    const currentYear = now.getFullYear();
+                    const [expMonth, expDay] = user.exp.split("/").map(Number);
+                    const expDate = new Date(currentYear, expMonth - 1, expDay);
+                    
+                    // もし計算した期限が過去で、今が年末・年始を跨いでいる場合の補正
+                    if (expDate < now && (now.getMonth() === 11 || now.getMonth() === 0)) {
+                        expDate.setFullYear(currentYear + 1);
+                    }
+                    
+                    const diffTime = expDate.getTime() - now.getTime();
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                    
+                    if (currentPoints <= 0) {
+                        expDisplay += " (残高なし)";
+                    } else if (diffDays > 0) {
+                        expDisplay += ` (あと ${diffDays} 日)`;
+                    } else if (diffDays === 0) {
+                        expDisplay += " (⚠️ 本日まで！)";
+                    } else {
+                        expDisplay += " (失効)";
+                    }
+                }
+                document.getElementById('mainExp').innerText = expDisplay;
                 
                 document.getElementById('memberNoDisplay').innerText = user.memberNo || "";
 
@@ -134,10 +164,9 @@
                     "シルバー": "bg-silver", 
                     "ブロンズ": "bg-bronze",
                     "レギュラー": "bg-regular",
-                    "ゲスト": "bg-guest" // 💡ゲストは白
+                    "ゲスト": "bg-guest" 
                 };
                 
-                // 選択されたランクに応じて、全体の文字色の濃さや線の色を微調整する処理
                 if(currentRank === "ゲスト") {
                     card.className = "w-full min-h-screen p-6 relative overflow-hidden bg-guest";
                     historySec.className = "mt-6 border-t border-black/10 pt-4";
@@ -146,7 +175,6 @@
                     card.className = `w-full min-h-screen p-6 relative overflow-hidden bg-dark-mode ${classes[currentRank]}`;
                     historySec.className = "mt-6 border-t border-white/10 pt-4";
                 } else {
-                    // もし想定外の文字が入っていた場合の初期状態（レギュラーの紺色）
                     card.className = "w-full min-h-screen p-6 relative overflow-hidden bg-dark-mode bg-regular";
                     historySec.className = "mt-6 border-t border-white/10 pt-4";
                 }
@@ -155,7 +183,6 @@
                 const histDiv = document.getElementById('historyList');
                 histDiv.innerHTML = ""; 
 
-                // ゲスト時と会員時で履歴の文字の線の色を馴染ませる
                 const borderClass = (currentRank === "ゲスト") ? "border-black/5" : "border-white/10";
                 const textOpacity = (currentRank === "ゲスト") ? "text-slate-500" : "opacity-60";
 
