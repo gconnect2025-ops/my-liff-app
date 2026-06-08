@@ -66,8 +66,14 @@
             </div>
         </div>
 
+        <div class="mb-5">
+            <button type="button" onclick="scanMemberQr()" class="w-full bg-slate-900 text-white py-3 rounded-2xl font-bold text-sm shadow-sm flex items-center justify-center gap-2 border border-slate-800 active:scale-[0.99] transition-all">
+                📷 お相手のQRコードをスキャンする
+            </button>
+        </div>
+
         <div class="mb-5 bg-slate-50/50 p-4 rounded-2xl border border-slate-100 space-y-3">
-            <p class="text-xs font-black text-[#bf953f] uppercase tracking-wider">🔍 お相手を検索・絞り込み</p>
+            <p class="text-xs font-black text-[#bf953f] uppercase tracking-wider">🔍 またはお相手を検索・絞り込み</p>
             <div>
                 <select id="searchCategory" onchange="filterMembers()" class="w-full bg-white border border-slate-200 rounded-xl p-2.5 text-[#001524] text-xs font-bold focus:outline-none focus:border-[#bf953f] shadow-sm">
                     <option value="">-- すべてのカテゴリー --</option>
@@ -138,8 +144,8 @@
         let myProfile = null;
         let staffUser = null;
         let allMembers = []; 
-        let maxLimitPoints = 0; // P列の利用上限ポイント
-        let myWalletPoints = 0; // 💡Q列の紹介人数...ではなく現在の保有ポイント残高（GAS側のuser.points）
+        let maxLimitPoints = 0; 
+        let myWalletPoints = 0; 
 
         async function init() {
             try {
@@ -153,11 +159,9 @@
                 staffUser = data.user;
                 document.getElementById('myStaffName').innerText = `${staffUser.realName} 様 (${staffUser.company || '加盟店'})`;
 
-                // 💡お店側（自分）の現在の保有ポイント残高を取得して画面右上に表示
                 myWalletPoints = Number(staffUser.points) || 0;
                 document.getElementById('myStaffPoints').innerText = `${myWalletPoints.toLocaleString()} PT`;
 
-                // P列（利用上限ポイント）の連動データを取得してセット
                 maxLimitPoints = Number(staffUser.limitPoints) || 0;
                 document.getElementById('pointLimitDisplay').innerText = `設定中の上限: ${maxLimitPoints.toLocaleString()} PT`;
 
@@ -181,11 +185,57 @@
             list.forEach(m => {
                 const opt = document.createElement('option');
                 opt.value = m.名前;
+                // 後方一致や完全判定をスムーズにするため、会員番号をデータ属性(data-no)に隠し持たせます
+                opt.setAttribute('data-no', m.会員番号 || '');
                 opt.innerText = `${m.名前} 様 [${m.会社名}] (${m.会員番号 || '番号未発行'})`;
                 select.appendChild(opt);
             });
 
             document.getElementById('memberCount').innerText = `対象: ${list.length}名`;
+        }
+
+        // 💡【新機能】QRコードを読み取って自動選択する処理
+        async function scanMemberQr() {
+            // LINEの仕様上、アプリ内ブラウザ（スマホ）でのみ動作します
+            if (!liff.isInClient()) {
+                alert("QRスキャン機能はスマートフォンのLINEアプリ内でのみご利用いただけます。");
+                return;
+            }
+            
+            try {
+                // LINE公式のカメラを起動させてQRコードのテキストデータを取得
+                const result = await liff.scanCodeV2();
+                const scannedText = result.value ? result.value.trim() : "";
+                
+                if (!scannedText) return; // キャンセルされたら何もしない
+
+                const select = document.getElementById('customerSelect');
+                let found = false;
+
+                // プルダウンの選択肢（メンバー）を上から順番にチェック
+                for (let i = 0; i < select.options.length; i++) {
+                    const opt = select.options[i];
+                    const memberNo = opt.getAttribute('data-no') || "";
+
+                    // QRコードに書き込まれている「会員番号（例: GC00002）」と一致するか判定
+                    if (memberNo !== "" && memberNo === scannedText) {
+                        select.selectedIndex = i;
+                        found = true;
+                        break;
+                    }
+                }
+
+                if (found) {
+                    // 自動選択されたので、ポイントの再計算を走らせる
+                    calculatePoints();
+                } else {
+                    alert(`読み取った会員番号 [${scannedText}] に一致するメンバーが登録されていません。最新のデータを反映するか、手動で検索してください。`);
+                }
+
+            } catch (err) {
+                console.error(err);
+                alert("QRコードの読み取りに失敗したか、カメラの権限が拒否されました。");
+            }
         }
 
         function filterMembers() {
@@ -225,12 +275,11 @@
             let baseAmt = amt - used;
             if (baseAmt < 0) baseAmt = 0; 
 
-            // 💡【重要計算】通常は残金の3%付与（最大5000）だが、自分自身のポイント原資（myWalletPoints）を超えないように制限！
             let earn = Math.floor(baseAmt * 0.03);
             if (earn > 5000) earn = 5000; 
             
             if (earn > myWalletPoints) {
-                earn = myWalletPoints; // お店の残高が上限になるようにストッパーを発動
+                earn = myWalletPoints; 
             }
             
             document.getElementById('calcUse').innerText = `${used.toLocaleString()} PT`;
@@ -254,7 +303,6 @@
             let earnedPoints = Math.floor(baseAmt * 0.03);
             if (earnedPoints > 5000) earnedPoints = 5000;
             
-            // 💡確定送信時にも、自分（お店）の原資を超えていないか最終ダブルチェック！
             if (earnedPoints > myWalletPoints) {
                 earnedPoints = myWalletPoints;
             }
