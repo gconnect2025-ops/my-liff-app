@@ -96,7 +96,7 @@
                 const user = result.user;
 
                 if (!user || !user.isRegistered) {
-                    // 💡【エルメ共存用修正】チャットせき止めに対応するため、画面に直接案内文を表示します
+                    // ⭕️ ボタンを押すと、今の公式LINE画面を閉じながら、自動で「登録」という文字を発言してGASのアンケートを強制起動させます！
                     document.getElementById('loading').innerHTML = `
                         <div class="text-center p-6 text-white flex flex-col items-center justify-center min-h-screen">
                             <p class="text-xl font-black mb-4 text-gold tracking-wider">G-CONNECT 会員登録</p>
@@ -104,9 +104,9 @@
                                 ご入会ありがとうございます！<br>
                                 まだ会員情報の初期登録が完了していません。
                             </p>
-                            <a href="https://liff.line.me/2007046922-EHW4nk35" class="w-full max-w-xs bg-gradient-to-r from-[#bf953f] via-[#fcf6ba] to-[#b38728] text-[#4a3b00] py-4 rounded-full text-base font-black shadow-lg text-center tracking-widest block text-decoration-none">
+                            <button onclick="startRegistration()" class="w-full max-w-xs bg-gradient-to-r from-[#bf953f] via-[#fcf6ba] to-[#b38728] text-[#4a3b00] py-4 rounded-full text-base font-black shadow-lg text-center tracking-widest block border-none cursor-pointer">
                                 📝 初期登録を開始する
-                            </a>
+                            </button>
                         </div>`;
                     return;
                 }
@@ -214,6 +214,22 @@
                 alert("会員データの取得に失敗しました。時間をおいて再度お試しください。");
             }
         }
+
+        // ⭕️ ボタンが押されたら、LIFFの機能を使って自動で「登録」という文字を発言させて、画面を閉じます
+        function startRegistration() {
+            liff.sendMessages([{
+                type: 'text',
+                text: '登録'
+            }]).then(() => {
+                liff.closeWindow(); // メッセージ送信に成功したら画面を自動で閉じます
+            }).catch((err) => {
+                console.error('エラー:', err);
+                // 万が一トーク画面への送信権限がない場合は、手動入力を促します
+                alert("登録を開始します。この画面を閉じて、トーク画面に「登録」と送信してください。");
+                liff.closeWindow();
+            });
+        }
+
         window.onload = init;
     </script>
 </body>
