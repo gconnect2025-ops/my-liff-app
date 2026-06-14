@@ -96,10 +96,17 @@
                 const user = result.user;
 
                 if (!user || !user.isRegistered) {
+                    // 💡【エルメ共存用修正】チャットせき止めに対応するため、画面に直接案内文を表示します
                     document.getElementById('loading').innerHTML = `
-                        <div class="text-center p-6 text-white">
-                            <p class="text-xl font-bold mb-2">会員情報が見つかりません</p>
-                            <p class="text-sm opacity-60">LINE公式アカウントで「登録」と送信し、初期登録を完了させてください。</p>
+                        <div class="text-center p-6 text-white flex flex-col items-center justify-center min-h-screen">
+                            <p class="text-xl font-black mb-4 text-gold tracking-wider">G-CONNECT 会員登録</p>
+                            <p class="text-sm opacity-90 mb-6 leading-relaxed">
+                                ご入会ありがとうございます！<br>
+                                まだ会員情報の初期登録が完了していません。
+                            </p>
+                            <a href="https://liff.line.me/2007046922-EHW4nk35" class="w-full max-w-xs bg-gradient-to-r from-[#bf953f] via-[#fcf6ba] to-[#b38728] text-[#4a3b00] py-4 rounded-full text-base font-black shadow-lg text-center tracking-widest block text-decoration-none">
+                                📝 初期登録を開始する
+                            </a>
                         </div>`;
                     return;
                 }
@@ -112,18 +119,15 @@
                 const currentPoints = Number(user.points) || 0;
                 document.getElementById('mainPoints').innerHTML = `${currentPoints.toLocaleString()}<span class="text-sm font-bold ml-1">PT</span>`;
                 
-                // 💡【新機能】残りの日数をその場でリアルタイムに計算する処理を追加
                 let expDisplay = `有効期限: ${user.exp || "--/--"}`;
                 if (user.exp && user.exp !== "--/--") {
                     const now = new Date();
                     now.setHours(0,0,0,0);
                     
-                    // 今年の年を取得し、MM/dd を日付オブジェクトに復元
                     const currentYear = now.getFullYear();
                     const [expMonth, expDay] = user.exp.split("/").map(Number);
                     const expDate = new Date(currentYear, expMonth - 1, expDay);
                     
-                    // もし計算した期限が過去で、今が年末・年始を跨いでいる場合の補正
                     if (expDate < now && (now.getMonth() === 11 || now.getMonth() === 0)) {
                         expDate.setFullYear(currentYear + 1);
                     }
@@ -145,7 +149,6 @@
                 
                 document.getElementById('memberNoDisplay').innerText = user.memberNo || "";
 
-                // QRコード生成
                 if (user.qrUrl && user.qrUrl.includes("http")) {
                     document.getElementById('qrCode').src = user.qrUrl;
                 } else {
@@ -153,7 +156,6 @@
                     document.getElementById('qrCode').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(cleanMemberNo)}`;
                 }
 
-                // 🎨 ランクに応じた背景色グラデーションの切り替え
                 const card = document.getElementById('cardContainer');
                 const historySec = document.getElementById('historySection');
                 
@@ -179,7 +181,6 @@
                     historySec.className = "mt-6 border-t border-white/10 pt-4";
                 }
 
-                // 履歴リストの描画
                 const histDiv = document.getElementById('historyList');
                 histDiv.innerHTML = ""; 
 
