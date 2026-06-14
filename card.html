@@ -8,28 +8,17 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { font-family: sans-serif; background-color: #001524; color: white; margin: 0; }
-        /* 各ランクの高級感あるグラデーション */
         .bg-platinum { background: linear-gradient(135deg, #303030, #a5a5a5, #303030); color: #fff; }
         .bg-diamond  { background: linear-gradient(135deg, #e0e0e0, #ffffff, #e0e0e0); color: #333; }
         .bg-gold     { background: linear-gradient(135deg, #bf953f, #fcf6ba 25%, #b38728); color: #4a3b00; }
         .bg-silver   { background: linear-gradient(135deg, #7f8c8d, #bdc3c7); color: #1a1a1a; }
         .bg-bronze   { background: linear-gradient(135deg, #804e2d, #e68e53); color: white; }
-        
-        /* レギュラー（初期状態）のグラデーション */
         .bg-regular  { background: linear-gradient(135deg, #00223e, #00335c); color: #ffffff; }
-        
-        /* ゲスト（未入会など）の時は「純白ベース」に設定（文字色を自動反転） */
         .bg-guest    { background: #ffffff !important; color: #001524 !important; }
-        
-        /* 半透明のボックス（背景に応じて馴染むように調整） */
         .point-box { background: rgba(0, 0, 0, 0.06); border: 1px solid rgba(0, 0, 0, 0.08); }
         .bg-dark-mode .point-box { background: rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.1); }
-        
-        /* 履歴部分の枠（背景に応じて馴染むように調整） */
         .history-box { background: rgba(0, 0, 0, 0.03); border: 1px solid rgba(0, 0, 0, 0.05); }
         .bg-dark-mode .history-box { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.05); }
-
-        /* ゴールド文字用スタイル */
         .text-gold {
             background: linear-gradient(135deg, #b38728 0%, #fcf6ba 25%, #bf953f 50%, #fcf6ba 75%, #aa771c 100%);
             -webkit-background-clip: text;
@@ -96,7 +85,9 @@
                 const user = result.user;
 
                 if (!user || !user.isRegistered) {
-                    // ⭕️ ボタンを押すと、今の公式LINE画面を閉じながら、自動で「登録」という文字を発言してGASのアンケートを強制起動させます！
+                    // 💡【重要修正】チャット経由の登録を完全にやめ、GASが直接持っているアンケートHTML（?page=register）を画面いっぱいに直接開かせます！
+                    const regUrl = `${GAS_URL_CARD}?page=register&userId=${encodeURIComponent(userId)}`;
+                    
                     document.getElementById('loading').innerHTML = `
                         <div class="text-center p-6 text-white flex flex-col items-center justify-center min-h-screen">
                             <p class="text-xl font-black mb-4 text-gold tracking-wider">G-CONNECT 会員登録</p>
@@ -104,9 +95,9 @@
                                 ご入会ありがとうございます！<br>
                                 まだ会員情報の初期登録が完了していません。
                             </p>
-                            <button onclick="startRegistration()" class="w-full max-w-xs bg-gradient-to-r from-[#bf953f] via-[#fcf6ba] to-[#b38728] text-[#4a3b00] py-4 rounded-full text-base font-black shadow-lg text-center tracking-widest block border-none cursor-pointer">
+                            <a href="${regUrl}" class="w-full max-w-xs bg-gradient-to-r from-[#bf953f] via-[#fcf6ba] to-[#b38728] text-[#4a3b00] py-4 rounded-full text-base font-black shadow-lg text-center tracking-widest block text-decoration-none">
                                 📝 初期登録を開始する
-                            </button>
+                            </a>
                         </div>`;
                     return;
                 }
@@ -214,22 +205,6 @@
                 alert("会員データの取得に失敗しました。時間をおいて再度お試しください。");
             }
         }
-
-        // ⭕️ ボタンが押されたら、LIFFの機能を使って自動で「登録」という文字を発言させて、画面を閉じます
-        function startRegistration() {
-            liff.sendMessages([{
-                type: 'text',
-                text: '登録'
-            }]).then(() => {
-                liff.closeWindow(); // メッセージ送信に成功したら画面を自動で閉じます
-            }).catch((err) => {
-                console.error('エラー:', err);
-                // 万が一トーク画面への送信権限がない場合は、手動入力を促します
-                alert("登録を開始します。この画面を閉じて、トーク画面に「登録」と送信してください。");
-                liff.closeWindow();
-            });
-        }
-
         window.onload = init;
     </script>
 </body>
