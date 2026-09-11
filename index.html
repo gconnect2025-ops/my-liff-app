@@ -73,7 +73,16 @@
         </div>
 
         <div class="mb-5 bg-slate-50/50 p-4 rounded-2xl border border-slate-100 space-y-3">
-            <p class="text-xs font-black text-[#bf953f] uppercase tracking-wider">🔍 またはお相手を検索・絞り込み</p>
+            <p class="text-xs font-black text-[#bf953f] uppercase tracking-wider">🔍 お相手を検索・絞り込み</p>
+            
+            <!-- ⭕️ 【新設】会場絞り込みドロップダウン -->
+            <div>
+                <select id="searchVenue" onchange="filterMembers()" class="w-full bg-white border border-slate-200 rounded-xl p-2.5 text-[#001524] text-xs font-bold focus:outline-none focus:border-[#bf953f] shadow-sm">
+                    <option value="">-- すべての会場 --</option>
+                </select>
+            </div>
+
+            <!-- カテゴリー絞り込み -->
             <div>
                 <select id="searchCategory" onchange="filterMembers()" class="w-full bg-white border border-slate-200 rounded-xl p-2.5 text-[#001524] text-xs font-bold focus:outline-none focus:border-[#bf953f] shadow-sm">
                     <option value="">-- すべてのカテゴリー --</option>
@@ -167,6 +176,7 @@
 
                 if (data.members && data.members.length > 0) {
                     allMembers = data.members.filter(m => m.userId !== myProfile.userId && m.名前 !== "ゲスト");
+                    setupVenueOptions(allMembers); // 会員リストから会場ドロップダウンを動的生成
                     renderMemberList(allMembers);
                 }
 
@@ -178,6 +188,23 @@
             }
         }
 
+        // ⭕️ 会場ドロップダウンの選択肢を生成する関数
+        function setupVenueOptions(members) {
+            const venueSelect = document.getElementById('searchVenue');
+            if (!venueSelect) return;
+
+            // 会場名（「J列」に入っている値）を重複なしで抽出
+            const venues = [...new Set(members.map(m => m.会場).filter(v => v && v !== "" && v !== "未設定"))];
+
+            venueSelect.innerHTML = '<option value="">-- すべての会場 --</option>';
+            venues.forEach(v => {
+                const opt = document.createElement('option');
+                opt.value = v;
+                opt.innerText = v;
+                venueSelect.appendChild(opt);
+            });
+        }
+
         function renderMemberList(list) {
             const select = document.getElementById('customerSelect');
             select.innerHTML = '<option value="">-- お相手を選択してください --</option>';
@@ -185,39 +212,34 @@
             list.forEach(m => {
                 const opt = document.createElement('option');
                 opt.value = m.名前;
-                // 後方一致や完全判定をスムーズにするため、会員番号をデータ属性(data-no)に隠し持たせます
                 opt.setAttribute('data-no', m.会員番号 || '');
-                opt.innerText = `${m.名前} 様 [${m.会社名}] (${m.会員番号 || '番号未発行'})`;
+                const venueLabel = (m.会場 && m.会場 !== '未設定') ? `[${m.会場}] ` : '';
+                opt.innerText = `${m.名前} 様 ${venueLabel}(${m.会社名 || '会社名なし'})`;
                 select.appendChild(opt);
             });
 
             document.getElementById('memberCount').innerText = `対象: ${list.length}名`;
         }
 
-        // 💡【新機能】QRコードを読み取って自動選択する処理
         async function scanMemberQr() {
-            // LINEの仕様上、アプリ内ブラウザ（スマホ）でのみ動作します
             if (!liff.isInClient()) {
                 alert("QRスキャン機能はスマートフォンのLINEアプリ内でのみご利用いただけます。");
                 return;
             }
             
             try {
-                // LINE公式のカメラを起動させてQRコードのテキストデータを取得
                 const result = await liff.scanCodeV2();
                 const scannedText = result.value ? result.value.trim() : "";
                 
-                if (!scannedText) return; // キャンセルされたら何もしない
+                if (!scannedText) return;
 
                 const select = document.getElementById('customerSelect');
                 let found = false;
 
-                // プルダウンの選択肢（メンバー）を上から順番にチェック
                 for (let i = 0; i < select.options.length; i++) {
                     const opt = select.options[i];
                     const memberNo = opt.getAttribute('data-no') || "";
 
-                    // QRコードに書き込まれている「会員番号（例: GC00002）」と一致するか判定
                     if (memberNo !== "" && memberNo === scannedText) {
                         select.selectedIndex = i;
                         found = true;
@@ -226,7 +248,6 @@
                 }
 
                 if (found) {
-                    // 自動選択されたので、ポイントの再計算を走らせる
                     calculatePoints();
                 } else {
                     alert(`読み取った会員番号 [${scannedText}] に一致するメンバーが登録されていません。最新のデータを反映するか、手動で検索してください。`);
@@ -238,23 +259,32 @@
             }
         }
 
+        // ⭕️ 検索フィルタリング関数（会場・カテゴリー・お名前のAND検索に対応）
         function filterMembers() {
+            const venueKeyword = document.getElementById('searchVenue').value;
             const catKeyword = document.getElementById('searchCategory').value;
             const nameKeyword = document.getElementById('searchName').value.toLowerCase().trim();
 
             const filtered = allMembers.filter(m => {
-                let matchCat = true;
-                if (nameKeyword === "") {
-                    if (catKeyword !== "") {
-                        const cleanKeyword = catKeyword.substring(0, 2); 
-                        matchCat = m.カテゴリー.includes(cleanKeyword);
-                    }
+                // 1. 会場での絞り込み
+                let matchVenue = true;
+                if (venueKeyword !== "") {
+                    matchVenue = (m.会場 === venueKeyword);
                 }
-                                 
+
+                // 2. カテゴリーでの絞り込み
+                let matchCat = true;
+                if (catKeyword !== "") {
+                    const cleanKeyword = catKeyword.substring(0, 2); 
+                    matchCat = m.カテゴリー ? m.カテゴリー.includes(cleanKeyword) : false;
+                }
+                
+                // 3. お名前・会社名での検索
                 const matchName = nameKeyword === "" || 
-                                  m.名前.toLowerCase().includes(nameKeyword) || 
-                                  m.会社名.toLowerCase().includes(nameKeyword);
-                return matchCat && matchName;
+                                  (m.名前 && m.名前.toLowerCase().includes(nameKeyword)) || 
+                                  (m.会社名 && m.会社名.toLowerCase().includes(nameKeyword));
+
+                return matchVenue && matchCat && matchName;
             });
 
             renderMemberList(filtered);
