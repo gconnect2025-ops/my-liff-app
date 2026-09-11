@@ -36,9 +36,10 @@
 
     <div id="cardContainer" style="display:none;" class="w-full min-h-screen p-6 relative overflow-hidden bg-regular">
         
-        <div class="text-center mb-6 pt-4">
+       <div class="text-center mb-6 pt-4">
             <p id="rankLabel" class="text-xs font-black tracking-widest opacity-80 uppercase text-gold"></p>
-            <p id="userCompany" class="text-sm font-bold mt-2 opacity-90"></p>
+            <p id="userVenue" class="text-xs font-bold mt-1 text-slate-300"></p>
+            <p id="userCompany" class="text-sm font-bold mt-1 opacity-90"></p>
             <h1 id="userName" class="text-3xl font-black mt-1">取得中...</h1>
         </div>
 
@@ -105,9 +106,9 @@
 
                 const currentRank = (user.rank || "レギュラー").trim();
                 document.getElementById('rankLabel').innerText = `RANK: ${currentRank}`;
+                document.getElementById('userVenue').innerText = user.venue ? `【${user.venue}】` : "";
                 document.getElementById('userCompany').innerText = user.company || "G-CONNECT";
                 document.getElementById('userName').innerText = `${user.realName} 様`;
-                
                 const currentPoints = Number(user.points) || 0;
                 document.getElementById('mainPoints').innerHTML = `${currentPoints.toLocaleString()}<span class="text-sm font-bold ml-1">PT</span>`;
                 
